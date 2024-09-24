@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: commsAdmin
+      POSTGRES_PASSWORD: MNLkwIGPKRswtGNOOZm3yd/QQHQUZUGccF/4gB+hyXA
+    volumes:
+      - /Users/ritapdey/psqlData/commsData:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ritap2804manutd@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: JustStarT@2804
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
