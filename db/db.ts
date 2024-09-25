@@ -1,12 +1,14 @@
-import { Pool } from 'pg'
-import dotenv from 'dotenv';
+import { PrismaClient } from "@prisma/client";
 
-dotenv.config();
+const prisma = new PrismaClient();
 
-export const pool = new Pool({
-    host: 'db',
-    port: 5432,
-    user: process.env.USER,
-    password: process.env.PASSWORD,
-    database: process.env.DATABASE
-});
+export async function connectToDatabase() {
+    try {
+        await prisma.$connect();
+        console.log("Database connected successfully");
+    } catch (error) {
+        console.error("Error connecting to database: ", error);
+    };
+};
+
+export { prisma };

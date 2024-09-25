@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { Login, Register, UserLoginSchema, UserRegisterSchema } from "../utils/utils";
-import { prisma } from "../db/db";
 import bcrypt from "bcrypt";
 import { sendToken } from "../utils/send.token";
+import { prisma } from '../../../../db/db'
 
 export const UserRegisterFunction = async (req: Request, res: Response) => {
   const { name, email, password }: Register = req.body;
