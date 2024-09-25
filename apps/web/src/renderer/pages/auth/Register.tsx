@@ -2,10 +2,20 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useDispatch } from 'react-redux';
 import BackButton from '../../components/BackButton';
+import { useAppSelector } from '../../redux/hooks/hook';
+// import { RegistrationSuccess } from '../../redux/slices/user.slice';
+// import { RegisterSchema } from '../../utils/zodSchemas';
 
 function Register() {
+  const { currentUser, isAuthenticated } = useAppSelector(
+    (state) => state.user,
+  );
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,20 +33,30 @@ function Register() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    setLoading(true);
+    e.preventDefault();
+    if (!name || !email || !password) {
+      return;
+    }
+    const formData = {
+      name: name as string,
+      email: email as string,
+      password: password as string,
+    };
+    console.log(formData);
     try {
-      e.preventDefault();
-      if (!name || !email || !password) {
-        return;
-      }
-      const formData = {
-        name: name as string,
-        email: email as string,
-        password: password as string,
-      };
-      console.log(formData);
+      // const result = RegisterSchema.safeParse(formData);
+      const registration = await axios.post(`http://localhost:8000/register`, {
+        name,
+        email,
+        password,
+      });
+      console.log(registration.data);
+      // dispatch(RegistrationSuccess(registration.data.user));
     } catch (error) {
       console.error('Error while registering: ', error);
     }
+    setLoading(false);
   };
 
   return (
