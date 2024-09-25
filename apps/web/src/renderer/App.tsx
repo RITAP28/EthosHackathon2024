@@ -1,13 +1,13 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import 'tailwindcss/tailwind.css';
-import Navbar from './components/Navbar';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import Home from './pages/normal/Home';
 
 function Hello() {
   return (
     <div className="bg-white w-full min-h-screen">
-      <Navbar />
+      <Home />
     </div>
   );
 }
