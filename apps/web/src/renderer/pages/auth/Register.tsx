@@ -1,10 +1,44 @@
+/* eslint-disable no-console */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '../../components/BackButton';
 
 function Register() {
   const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    try {
+      e.preventDefault();
+      if (!name || !email || !password) {
+        return;
+      }
+      const formData = {
+        name: name as string,
+        email: email as string,
+        password: password as string,
+      };
+      console.log(formData);
+    } catch (error) {
+      console.error('Error while registering: ', error);
+    }
+  };
+
   return (
     <div className="w-full min-h-screen">
       <BackButton />
@@ -23,7 +57,22 @@ function Register() {
                   action=""
                   method="post"
                   className="border-[1px] border-slate-400 rounded-md px-[2rem] py-[2rem]"
+                  onSubmit={(e) => {
+                    handleSubmit(e);
+                  }}
                 >
+                  <div className="pb-4 flex flex-col">
+                    <label htmlFor="name" className="w-full">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      name=""
+                      className="w-full border-[1px] px-2 py-1 border-black text-black rounded-md text-sm"
+                      placeholder="Enter your name"
+                      onChange={handleNameChange}
+                    />
+                  </div>
                   <div className="pb-4 flex flex-col">
                     <label htmlFor="email" className="w-full">
                       Email
@@ -31,8 +80,9 @@ function Register() {
                     <input
                       type="text"
                       name=""
-                      className="w-full border-[1px] px-2 py-1 border-black rounded-md text-sm"
+                      className="w-full border-[1px] px-2 py-1 border-black text-black rounded-md text-sm"
                       placeholder="Enter your email"
+                      onChange={handleEmailChange}
                     />
                   </div>
                   <div className="pb-4 flex flex-col">
@@ -42,8 +92,9 @@ function Register() {
                     <input
                       type="text"
                       name=""
-                      className="w-full border-[1px] px-2 py-1 border-black rounded-md text-sm"
+                      className="w-full border-[1px] px-2 py-1 border-black text-black rounded-md text-sm"
                       placeholder="Enter your password"
+                      onChange={handlePasswordChange}
                     />
                   </div>
                   <div className="py-2 flex justify-center">
