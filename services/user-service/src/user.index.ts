@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import { connectToDatabase } from './db/db';
+import router from './routes/routes';
 
 dotenv.config();
 
@@ -21,10 +23,11 @@ app.use(express.urlencoded({
 }));
 app.use(cookieParser());
 app.use(express.static("public"));
-// app.use('/', router());
+app.use('/', router());
 
 async function startServer() {
     try {
+        connectToDatabase();
         app.listen(port, () => {
             console.log(`User-Service is running at ${port}`);
         })

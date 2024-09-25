@@ -11,8 +11,16 @@ export interface Login {
     password: string;
 };
 
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    password: string;
+    isAuthenticated: boolean;
+};
+
 export const UserRegisterSchema = z.object({
-  username: z.string().min(5, "Username shall be at least 5 characters long."),
+  name: z.string().min(5, "Username shall be at least 5 characters long."),
   email: z.string().email("Invalid Email"),
   password: z
     .string()
