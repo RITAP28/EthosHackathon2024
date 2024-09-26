@@ -3,6 +3,8 @@ import 'tailwindcss/tailwind.css';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/normal/Home';
+import { useAppSelector } from './redux/hooks/hook';
+import Landing from './pages/normal/Landing';
 
 function Hello() {
   return (
@@ -13,10 +15,11 @@ function Hello() {
 }
 
 export default function App() {
+  const { isAuthenticated } = useAppSelector((state) => state.user);
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Hello />} />
+        <Route path="/" element={!isAuthenticated ? <Hello /> : <Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>

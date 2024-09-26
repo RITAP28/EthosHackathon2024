@@ -170,3 +170,44 @@ export const UserLoginFunction = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.query.id;
+    if(!userId){
+      return res.status(400).json({
+        success: false,
+        msg: "User ID is required"
+      });
+    };
+    const numericId = Number(userId);
+    if(isNaN(numericId)){
+      return res.status(400).json({
+        success: false,
+        msg: "User ID must be a valid integer"
+      });
+    };
+    const user = await prisma.user.findUnique({
+      where: {
+        id: numericId
+      }
+    });
+    if(!user){
+      return res.status(404).json({
+        success: false,
+        msg: "User not found"
+      })
+    };
+    return res.status(200).json({
+      success: true,
+      user,
+      msg: "User fetched successfully"
+    });
+  } catch (error) {
+    console.error("Error while fetching user: ", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error"
+    });
+  };
+};

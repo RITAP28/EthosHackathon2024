@@ -1,10 +1,36 @@
+/* eslint-disable no-console */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import BackButton from '../../components/BackButton';
 
 function Login() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+  };
+  const handlePwdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+  };
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    setLoading(true);
+    e.preventDefault();
+    try {
+      const loginResponse = await axios.post(`http://localhost:8000/login`, {
+        email,
+        password,
+      });
+      console.log('Login response: ', loginResponse.data);
+      navigate('/');
+    } catch (error) {
+      console.error('Error while logging in: ', error);
+    }
+    setLoading(true);
+  };
   return (
     <div className="w-full min-h-screen">
       <BackButton />
@@ -23,6 +49,7 @@ function Login() {
                   action=""
                   method="post"
                   className="border-[1px] border-slate-400 rounded-md px-[2rem] py-[2rem]"
+                  onSubmit={handleSubmit}
                 >
                   <div className="pb-4 flex flex-col">
                     <label htmlFor="email" className="w-full">
@@ -31,8 +58,9 @@ function Login() {
                     <input
                       type="text"
                       name=""
-                      className="w-full border-[1px] px-2 py-1 border-black rounded-md text-sm"
+                      className="w-full border-[1px] px-2 py-1 border-black text-black rounded-md text-sm"
                       placeholder="Enter your email"
+                      onChange={handleEmailChange}
                     />
                   </div>
                   <div className="pb-4 flex flex-col">
@@ -42,16 +70,18 @@ function Login() {
                     <input
                       type="text"
                       name=""
-                      className="w-full border-[1px] px-2 py-1 border-black rounded-md text-sm"
+                      className="w-full border-[1px] px-2 py-1 border-black text-black rounded-md text-sm"
                       placeholder="Enter your password"
+                      onChange={handlePwdChange}
                     />
                   </div>
                   <div className="py-2 flex justify-center">
                     <button
                       type="submit"
                       className="px-4 py-1 rounded-md hover:cursor-pointer bg-white text-black font-semibold"
+                      disabled={loading}
                     >
-                      Login
+                      {loading ? 'Signing you in...' : 'Login'}
                     </button>
                   </div>
                   <div className="flex justify-center text-sm">

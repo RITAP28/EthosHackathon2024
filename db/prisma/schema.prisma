@@ -13,13 +13,11 @@ enum Role {
 }
 
 model User {
-  id              Int       @id @default(autoincrement())
+  id              Int       @id @default(autoincrement()) @unique
   name            String
   email           String    @unique
   password        String
   isAuthenticated Boolean   @default(false)
-  accessToken     String    @unique @default("")
-  refreshToken    String    @unique @default("")
   role            Role      @default(USER)
   createdAt       DateTime  @default(now())
   Session         Session[]

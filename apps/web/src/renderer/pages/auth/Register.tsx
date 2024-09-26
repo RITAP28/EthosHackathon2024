@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-// import { useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import BackButton from '../../components/BackButton';
 // import { useAppSelector } from '../../redux/hooks/hook';
-// import { RegistrationSuccess } from '../../redux/slices/user.slice';
+import { RegistrationSuccess } from '../../redux/slices/user.slice';
 // import { RegisterSchema } from '../../utils/zodSchemas';
 
 function Register() {
@@ -14,11 +14,11 @@ function Register() {
   //   (state) => state.user,
   // );
   const navigate = useNavigate();
-  // const dispatch = useDispatch();
-  const [, setLoading] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -52,7 +52,7 @@ function Register() {
         password,
       });
       console.log(registration.data);
-      // dispatch(RegistrationSuccess(registration.data.user));
+      dispatch(RegistrationSuccess(registration.data.user));
     } catch (error) {
       console.error('Error while registering: ', error);
     }
@@ -120,9 +120,10 @@ function Register() {
                   <div className="py-2 flex justify-center">
                     <button
                       type="submit"
-                      className="px-4 py-1 rounded-md hover:cursor-pointer bg-white text-black font-semibold"
+                      className={`px-4 py-1 rounded-md hover:cursor-pointer bg-white text-black font-semibold ${loading && 'bg-slate-500'}`}
+                      disabled={loading}
                     >
-                      Register
+                      {loading ? 'Signing you up...' : 'Register'}
                     </button>
                   </div>
                   <div className="flex justify-center text-sm">
