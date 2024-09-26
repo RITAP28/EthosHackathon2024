@@ -1,8 +1,60 @@
 import { Request, Response } from "express";
-import { Login, Register, UserLoginSchema, UserRegisterSchema } from "../utils/utils";
+import {
+  Login,
+  Register,
+  UserLoginSchema,
+  UserRegisterSchema,
+} from "../utils/utils";
 import bcrypt from "bcrypt";
 import { sendToken } from "../utils/send.token";
-import { prisma } from '../../../../db/db'
+import { prisma } from "../../../../db/db";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const generateAccessToken = (
+  userId: number,
+  userEmail: string,
+  userName: string
+) => {
+  const accessToken = jwt.sign(
+    {
+      id: userId,
+      email: userEmail,
+      name: userName,
+    },
+    process.env.ACCESS_TOKEN_SECRET_KEY as string,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+  );
+  return accessToken;
+};
+
+const generateRefreshToken = (userId: number, userEmail: string, userName: string) => {
+  const refreshToken = jwt.sign({
+    id: userId,
+    email: userEmail,
+    name: userName
+  }, process.env.REFRESH_TOKEN_SECRET as string,
+  { expiresIn: process.env.REFRESH_TOKEN_EXPIRY });
+  return refreshToken;
+};
+
+const generateAccessAndRefreshToken = async (userId: number) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+  if (!user) {
+    throw new Error(`User with userId ${userId} not found`);
+  }
+
+  const accessToken = generateAccessToken(user.id, user.email, user.name);
+  const refreshToken = generateRefreshToken(user.id, user.email, user.name);
+
+  return { accessToken, refreshToken };
+};
 
 export const UserRegisterFunction = async (req: Request, res: Response) => {
   const { name, email, password }: Register = req.body;
@@ -45,7 +97,7 @@ export const UserRegisterFunction = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         password: encryptedPassword,
-        isAuthenticated: true
+        isAuthenticated: true,
       },
     });
 
@@ -54,64 +106,67 @@ export const UserRegisterFunction = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Validation failed: ", error);
     return res.status(500).json({
-        success: false,
-        msg: "Internal Server Error"
+      success: false,
+      msg: "Internal Server Error",
     });
   }
 };
 
 export const UserLoginFunction = async (req: Request, res: Response) => {
-    try {
-        const { email, password }: Login = req.body;
-        if(!email || !password){
-            return res.status(401).json({
-                success: false,
-                msg: "Lacking valid authentication credentials"
-            });
-        };
-        const userData = {
-            email: email,
-            password: password
-        };
-
-        const loggedUser = UserLoginSchema.parse(userData);
-
-        // checking if the user exists
-        const existingUser = await prisma.user.findFirst({
-            where: {
-                email: loggedUser.email
-            }
-        });
-        if(!existingUser){
-            return res.status(404).json({
-                success: false,
-                msg: "User not found"
-            });
-        };
-
-        const validPassword = await bcrypt.compare(loggedUser.password, existingUser.password);
-        if(!validPassword){
-            return res.status(401).json({
-                success: false,
-                msg: "Invalid credentials"
-            });
-        };
-
-        await prisma.user.update({
-            where: {
-                email: loggedUser.email
-            },
-            data: {
-                isAuthenticated: true
-            }
-        });
-
-        return await sendToken(existingUser, 200, res);
-    } catch (error) {
-        console.error("Login failed: ", error);
-        return res.status(500).json({
-            success: false,
-            msg: "Internal Server Error"
-        });
+  try {
+    const { email, password }: Login = req.body;
+    if (!email || !password) {
+      return res.status(401).json({
+        success: false,
+        msg: "Lacking valid authentication credentials",
+      });
+    }
+    const userData = {
+      email: email,
+      password: password,
     };
+
+    const loggedUser = UserLoginSchema.parse(userData);
+
+    // checking if the user exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: loggedUser.email,
+      },
+    });
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        msg: "User not found",
+      });
+    }
+
+    const validPassword = await bcrypt.compare(
+      loggedUser.password,
+      existingUser.password
+    );
+    if (!validPassword) {
+      return res.status(401).json({
+        success: false,
+        msg: "Invalid credentials",
+      });
+    }
+
+    await prisma.user.update({
+      where: {
+        email: loggedUser.email,
+      },
+      data: {
+        isAuthenticated: true,
+      },
+    });
+
+    return await sendToken(existingUser, 200, res);
+  } catch (error) {
+    console.error("Login failed: ", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error",
+    });
+  }
 };

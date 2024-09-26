@@ -3,19 +3,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
+// import { useDispatch } from 'react-redux';
 import BackButton from '../../components/BackButton';
-import { useAppSelector } from '../../redux/hooks/hook';
+// import { useAppSelector } from '../../redux/hooks/hook';
 // import { RegistrationSuccess } from '../../redux/slices/user.slice';
 // import { RegisterSchema } from '../../utils/zodSchemas';
 
 function Register() {
-  const { currentUser, isAuthenticated } = useAppSelector(
-    (state) => state.user,
-  );
+  // const { currentUser, isAuthenticated } = useAppSelector(
+  //   (state) => state.user,
+  // );
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false);
+  // const dispatch = useDispatch();
+  const [, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
