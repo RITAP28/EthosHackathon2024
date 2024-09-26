@@ -239,6 +239,14 @@ export const UserLogoutFunction = async (req: Request, res: Response) => {
         userId: userId,
       },
     });
+    res.cookie("token", null, {
+      expires: new Date(Date.now()),
+      httpOnly: true
+    });
+    return res.status(200).json({
+      success: false,
+      msg: `User with ID ${userId} logged out successfully`
+    });
   } catch (error) {
     console.error("Error while logging out: ", error);
   }
@@ -252,7 +260,8 @@ export const readToken = async (req: Request, res: Response) => {
         success: false,
         msg: "User ID is missing",
       });
-    }
+    };
+    console.log(userId);
     const session = await prisma.session.findUnique({
       where: {
         userId: userId,

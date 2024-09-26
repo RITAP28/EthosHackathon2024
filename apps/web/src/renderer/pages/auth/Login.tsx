@@ -3,10 +3,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useDispatch } from 'react-redux';
 import BackButton from '../../components/BackButton';
+import { LoginSuccess } from '../../redux/slices/user.slice';
 
 function Login() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -25,6 +28,7 @@ function Login() {
         password,
       });
       console.log('Login response: ', loginResponse.data);
+      dispatch(LoginSuccess(loginResponse.data.user));
       navigate('/');
     } catch (error) {
       console.error('Error while logging in: ', error);
