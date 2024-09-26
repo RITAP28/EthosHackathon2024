@@ -25,7 +25,7 @@ model User {
 
 model Session {
   sessionId Int      @id @default(autoincrement())
-  userId    Int
+  userId    Int      @unique
   token     String   @unique
   expiresAt DateTime
   user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)

@@ -1,4 +1,6 @@
+import { JwtPayload } from "jsonwebtoken";
 import { Document } from "mongoose";
+import { WebSocket } from "ws";
 
 export interface Text extends Document {
     senderId: number;
@@ -11,3 +13,16 @@ export interface Text extends Document {
     isDelivered: boolean;
     isRead: boolean;
 }
+
+interface User {
+    email: string;
+}
+
+export interface ExtendedWebsocket extends WebSocket {
+    user: User;
+}
+
+export interface ExtendedDecodedToken extends JwtPayload {
+    email: string;
+    iat: number;
+};

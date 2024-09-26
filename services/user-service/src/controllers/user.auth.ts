@@ -6,7 +6,7 @@ import {
   UserRegisterSchema,
 } from "../utils/utils";
 import bcrypt from "bcrypt";
-import { sendToken } from "../utils/send.token";
+import { sendTokenAfterLogin, sendTokenAfterRegistration } from "../utils/send.token";
 import { prisma } from "../../../../db/db";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -30,13 +30,20 @@ const generateAccessToken = (
   return accessToken;
 };
 
-const generateRefreshToken = (userId: number, userEmail: string, userName: string) => {
-  const refreshToken = jwt.sign({
-    id: userId,
-    email: userEmail,
-    name: userName
-  }, process.env.REFRESH_TOKEN_SECRET as string,
-  { expiresIn: process.env.REFRESH_TOKEN_EXPIRY });
+const generateRefreshToken = (
+  userId: number,
+  userEmail: string,
+  userName: string
+) => {
+  const refreshToken = jwt.sign(
+    {
+      id: userId,
+      email: userEmail,
+      name: userName,
+    },
+    process.env.REFRESH_TOKEN_SECRET as string,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+  );
   return refreshToken;
 };
 
@@ -102,7 +109,7 @@ export const UserRegisterFunction = async (req: Request, res: Response) => {
     });
 
     console.log("New User created and saved in the database");
-    return await sendToken(newUser, 200, res);
+    return await sendTokenAfterRegistration(newUser, 200, res);
   } catch (error) {
     console.error("Validation failed: ", error);
     return res.status(500).json({
@@ -161,7 +168,7 @@ export const UserLoginFunction = async (req: Request, res: Response) => {
       },
     });
 
-    return await sendToken(existingUser, 200, res);
+    return await sendTokenAfterLogin(existingUser, 200, res);
   } catch (error) {
     console.error("Login failed: ", error);
     return res.status(500).json({
@@ -174,40 +181,96 @@ export const UserLoginFunction = async (req: Request, res: Response) => {
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
     const userId = req.query.id;
-    if(!userId){
+    if (!userId) {
       return res.status(400).json({
         success: false,
-        msg: "User ID is required"
+        msg: "User ID is required",
       });
-    };
+    }
     const numericId = Number(userId);
-    if(isNaN(numericId)){
+    if (isNaN(numericId)) {
       return res.status(400).json({
         success: false,
-        msg: "User ID must be a valid integer"
+        msg: "User ID must be a valid integer",
       });
-    };
+    }
     const user = await prisma.user.findUnique({
       where: {
-        id: numericId
-      }
+        id: numericId,
+      },
     });
-    if(!user){
+    if (!user) {
       return res.status(404).json({
         success: false,
-        msg: "User not found"
-      })
-    };
+        msg: "User not found",
+      });
+    }
     return res.status(200).json({
       success: true,
       user,
-      msg: "User fetched successfully"
+      msg: "User fetched successfully",
     });
   } catch (error) {
     console.error("Error while fetching user: ", error);
     return res.status(500).json({
       success: false,
-      msg: "Internal Server Error"
+      msg: "Internal Server Error",
     });
-  };
+  }
+};
+
+export const UserLogoutFunction = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.query.id);
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        msg: "User ID is required",
+      });
+    }
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        msg: "User ID must be a valid Number",
+      });
+    }
+    await prisma.session.delete({
+      where: {
+        userId: userId,
+      },
+    });
+  } catch (error) {
+    console.error("Error while logging out: ", error);
+  }
+};
+
+export const readToken = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.query.id);
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        msg: "User ID is missing",
+      });
+    }
+    const session = await prisma.session.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+    const token = session?.token as string;
+    console.log("The token is: ", token);
+    const decodedToken = jwt.verify(
+      token,
+      process.env.TOKEN_SECRET_KEY as string
+    );
+    return res.status(200).json({
+      success: true,
+      decodedToken,
+      token,
+      msg: "Token decoded successfully",
+    });
+  } catch (error) {
+    console.error("Error while reading token: ", error);
+  }
 };
