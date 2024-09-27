@@ -3,6 +3,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { ExtendedDecodedToken, ExtendedWebsocket } from './utils/utils';
+import { getUsersFromDatabase } from './controller/chat.controller';
 
 dotenv.config();
 
@@ -41,6 +42,24 @@ wss.on('connection', function connection(ws: ExtendedWebsocket) {
                     ws.on('message', function(message){
                         console.log(`Received message: ${message}`);
                     });
+
+                    ws.on('message', async function(message: string){
+                        try {
+                            const parsedMessage = JSON.parse(message);
+                            if(parsedMessage.action === 'get-users-list'){
+                                const users = await getUsersFromDatabase(ws.user.email);
+
+                                ws.send(JSON.stringify({
+                                    action: 'get-users-list',
+                                    users
+                                }));
+                                console.log(users);
+                            };
+                            console.log(`Received users for user with email ${ws.user.email}`);
+                        } catch (error) {
+                            console.log('Socket Error while fetching list of users: ', error);
+                        }
+                    })
 
                     ws.on('error', () => {
                         console.log(`Websocket closed, user with email ${ws.user.email} has disconnected`);

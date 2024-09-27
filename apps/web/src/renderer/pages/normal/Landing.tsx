@@ -1,17 +1,19 @@
 /* eslint-disable no-console */
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { useToast } from '@chakra-ui/react';
 import { useAppSelector } from '../../redux/hooks/hook';
 import { LogoutSuccess } from '../../redux/slices/user.slice';
+import { useWebSocket } from '../../context/WebSocket';
 
 function Landing() {
   const { currentUser } = useAppSelector((state) => state.user);
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [token, setToken] = useState<string>('');
+  const ws = useWebSocket();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const handleLogout = async (userId: number) => {
     try {
@@ -29,48 +31,35 @@ function Landing() {
     }
   };
 
-  const getToken = async (userId: number) => {
-    try {
-      const tokenResponse = await axios.get(
-        `http://localhost:8000/readtoken?id=${userId}`,
-        {
-          withCredentials: true,
-        },
-      );
-      console.log('token response: ', tokenResponse);
-      setToken(tokenResponse.data.token);
-    } catch (error) {
-      console.error('Error while fetching token: ', error);
-    }
-  };
-
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
+    } else if (ws) {
+      // Send token over WebSocket once it's available and the connection is established
+      console.log('Current WebSocket instance:', ws);
+      ws.onopen = () => {
+        console.log('WebSocket connection established!');
+        toast({
+          title: 'Connected to Socket',
+          status: 'success',
+          duration: 4000,
+          isClosable: true,
+        });
+      };
+
+      ws.onmessage = (message) => {
+        console.log('Received message: ', message);
+      };
+
+      ws.onerror = () => {
+        console.error('Websocket connection error');
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket connection closed');
+      };
     }
-    getToken(currentUser?.id as number);
-    const socket = new WebSocket('ws://localhost:8001');
-    socket.onopen = () => {
-      console.log(`Websocket connection established`);
-      // token sent for the authentication of Websocket connection
-      socket.send(token);
-    };
-
-    socket.onmessage = (message) => {
-      const data = JSON.parse(message.data);
-      console.log(`Message from server: `, data);
-    };
-
-    socket.onclose = () => {
-      console.log(`Websocket closed successfully`);
-    };
-
-    setWs(socket);
-
-    return () => {
-      if (socket) socket.close();
-    };
-  }, [currentUser, token, navigate]);
+  }, [currentUser, navigate, toast, ws]);
 
   return (
     <div>
@@ -91,12 +80,24 @@ function Landing() {
             </div>
           </div>
           <div className="w-full h-[95%] flex flex-row bg-slate-700">
-            <div className="w-[20%] bg-slate-300">sdjcknjsd</div>
+            <div className="w-[20%] bg-slate-300">
+              <div className="w-full">
+                <button
+                  type="button"
+                  className="px-4 py-1 rounded-lg bg-black text-white hover:cursor-pointer hover:bg-white hover:text-black"
+                  onClick={() => {
+                    navigate('/users');
+                  }}
+                >
+                  Users
+                </button>
+              </div>
+            </div>
             <div className="w-[80%]">sdnjcjksdnc</div>
           </div>
         </div>
       ) : (
-        <div>No</div>
+        <div>You are not connected to socket</div>
       )}
     </div>
   );

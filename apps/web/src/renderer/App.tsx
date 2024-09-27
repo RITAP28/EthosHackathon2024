@@ -5,6 +5,7 @@ import Register from './pages/auth/Register';
 import Home from './pages/normal/Home';
 import { useAppSelector } from './redux/hooks/hook';
 import Landing from './pages/normal/Landing';
+import Users from './pages/normal/Users';
 
 function Hello() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/" element={!isAuthenticated ? <Hello /> : <Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/users" element={<Users />} />
       </Routes>
     </Router>
   );

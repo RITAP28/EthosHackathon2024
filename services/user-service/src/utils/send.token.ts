@@ -81,13 +81,13 @@ export const sendTokenAfterLogin = async (
       },
     });
 
-    const session = await prisma.session.findUnique({
+    const existingSession = await prisma.session.findUnique({
       where: {
         userId: existingUser?.id
       }
     });
 
-    if(!session){
+    if(!existingSession){
       await prisma.session.create({
         data: {
           userId: existingUser?.id as number,
@@ -99,7 +99,8 @@ export const sendTokenAfterLogin = async (
 
     await prisma.session.update({
       where: {
-        sessionId: session?.sessionId
+        sessionId: existingSession?.sessionId,
+        userId: existingSession?.userId
       },
       data: {
         token: token,
