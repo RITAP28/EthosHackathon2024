@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/no-static-element-interactions */
+/* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable no-console */
 import axios from 'axios';
 import { useEffect, useState } from 'react';
@@ -38,6 +40,7 @@ function Landing() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [users, setUsers] = useState<Users[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [, setReceiverWindow] = useState<string | null>(null);
 
   const handleLogout = async (userId: number) => {
     try {
@@ -70,6 +73,36 @@ function Landing() {
       console.error('Error while fetching users from database: ', error);
     }
     setLoading(false);
+  };
+
+  const handleUserClick = (receiverEmail: string) => {
+    try {
+      if (ws && ws.OPEN) {
+        ws.send(
+          JSON.stringify({
+            action: 'start-chat',
+            targetUser: receiverEmail,
+          }),
+        );
+
+        ws.onmessage = (message) => {
+          console.log('Received message: ', message);
+          toast({
+            title: `${receiverEmail} is connected to you`,
+            description: `You are now chatting with ${receiverEmail}`,
+            status: 'success',
+            isClosable: true,
+            duration: 4000,
+          });
+          setReceiverWindow(receiverEmail);
+        };
+      }
+    } catch (error) {
+      console.error(
+        'Error while establishing connection with another user: ',
+        error,
+      );
+    }
   };
 
   useEffect(() => {
@@ -192,6 +225,9 @@ function Landing() {
                             <div
                               className="p-2 border-green-800 border-2 rounded-lg w-full flex flex-row bg-emerald-800"
                               key={user.id}
+                              onClick={() => {
+                                handleUserClick(user.email);
+                              }}
                             >
                               <div className="w-[80%] flex items-center">
                                 <div>

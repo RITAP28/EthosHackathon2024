@@ -12,7 +12,7 @@ const port = process.env.PORT || 7070;
 
 app.use(
     cors({
-        origin: ['http://localhost:1212'],
+        origin: ['http://localhost:1212','http://localhost:1213'],
         credentials: true
     })
 );
