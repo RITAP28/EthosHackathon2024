@@ -10,10 +10,14 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { RegistrationSuccess } from "../../redux/slices/user.slice";
 import { useToast } from "@chakra-ui/react";
+import { RegisterSchema } from "../../lib/zodSchemas";
 
 const Register = () => {
   const dispatch = useDispatch();
   const toast = useToast();
+  // const [error, setError] = useState<boolean>(false);
+  // const [errorMsg, setErrorMsg] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<User>({
     name: "",
     email: "",
@@ -28,19 +32,34 @@ const Register = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) =>{
+    setLoading(true);
     try {
       e.preventDefault();
       console.log(formData);
-      const registerResponse = await axios.post(`http://localhost:8000/register`, formData);
-      console.log('Registration result: ', registerResponse.data.user);
-      dispatch(RegistrationSuccess(registerResponse.data.user));
-      toast({
-        title: 'Registration successful',
-        description: `You have successfully registered for Nebula. You can begin texting now!`,
-        status: 'success',
-        duration: 4000,
-        isClosable: true
-      });
+      const zodValidatedFormData = RegisterSchema.safeParse(formData);
+      if(!zodValidatedFormData.success){
+        console.error('Validation failed: ', zodValidatedFormData.error);
+        toast({
+          title: 'Registration failed',
+          description: `${zodValidatedFormData.error.message}`,
+          status: 'error',
+          duration: 4000,
+          isClosable: true
+        });
+        return;
+      } else {
+        console.log('zod validated form: ', zodValidatedFormData);
+        const registerResponse = await axios.post(`http://localhost:8000/register`, zodValidatedFormData.data);
+        console.log('Registration result: ', registerResponse.data.user);
+        dispatch(RegistrationSuccess(registerResponse.data.user));
+        toast({
+          title: 'Registration successful',
+          description: `You have successfully registered for Nebula. You can begin texting now!`,
+          status: 'success',
+          duration: 4000,
+          isClosable: true
+        });
+      };
     } catch (error) {
       console.error('Error while submitting register form', error);
       toast({
@@ -51,6 +70,7 @@ const Register = () => {
         isClosable: true
       });
     };
+    setLoading(false);
   };
 
   return (
@@ -151,12 +171,19 @@ const Register = () => {
                   />
                 </div>
               </div>
+              {/* {error && (
+                <div className="w-full flex justify-center">
+                  <p className="w-[90%] px-2 text-sm text-red-500">
+                    {errorMsg}
+                  </p>
+                </div>
+              )} */}
               <div className="w-full flex justify-center">
                 <button
                   type="submit"
                   className="w-[80%] py-2 rounded-md bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-white to-white border-[0.5px] border-slate-700 text-lg hover:cursor-pointer hover:border-slate-300 transition duration-400 ease-in-out"
                 >
-                  Register
+                  {loading ? "Registering you..." : "Register"}
                 </button>
               </div>
               <div className="w-full flex justify-center pt-2">
