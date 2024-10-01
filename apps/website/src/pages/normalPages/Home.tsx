@@ -73,7 +73,7 @@ const Home = () => {
                 type="submit"
                 className="w-[80%] py-2 rounded-md bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-white to-white border-[0.5px] border-slate-700 text-lg hover:cursor-pointer hover:border-slate-300 transition duration-400 ease-in-out"
               >
-               <span className="w-full flex justify-center items-center gap-2">Continue with <img src="public/google.png" className="w-5 h-5 flex justify-center" alt="" /></span>
+               <span className="w-full flex justify-center items-center gap-2">Continue with <img src="/google.png" className="w-5 h-5 flex justify-center" alt="" /></span>
               </button>
             </div>
             <div className="w-full flex justify-center pt-2">
@@ -84,7 +84,7 @@ const Home = () => {
           </form>
         </div>
       </div>
-      <ShootingStars minDelay={3000} />
+      <ShootingStars minDelay={2000} maxDelay={3000} />
       <StarsBackground starDensity={0.001} />
     </div>
   );
