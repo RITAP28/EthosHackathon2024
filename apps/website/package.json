@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.13.0",
     "@reduxjs/toolkit": "^2.2.7",
     "axios": "^1.7.7",
+    "clsx": "^2.1.1",
     "framer-motion": "^11.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -23,6 +24,7 @@
     "react-router-dom": "^6.26.2",
     "redux-persist": "^6.0.0",
     "redux-thunk": "^3.1.0",
+    "tailwind-merge": "^2.5.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
