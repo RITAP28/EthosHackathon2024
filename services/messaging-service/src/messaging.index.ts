@@ -87,10 +87,10 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
                   targetUserSocket.chatPartner = ws;
 
                   ws.send(JSON.stringify({
-                    message: `Chat with email ${targetEmail} has started`
+                    message: `${targetEmail} connected`
                   }));
                   targetUserSocket.send(JSON.stringify({
-                    message: `Chat with email ${ws.user.user.email} has started`
+                    message: `${ws.user.user.email} connected`
                   }));
                 } else {
                     ws.send(

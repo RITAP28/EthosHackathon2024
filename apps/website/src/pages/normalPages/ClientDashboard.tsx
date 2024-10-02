@@ -9,9 +9,71 @@ import { IoMdSettings } from "react-icons/io";
 import { useAppSelector } from "../../redux/hooks/hook";
 import TextingSection from "../../components/TextingSection";
 import { SlLogout } from "react-icons/sl";
+import { useWebSocket } from "../../hooks/UseWebsocket";
+import { useEffect } from "react";
+import { useToast } from "@chakra-ui/react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const ClientDashboard = () => {
   const { currentUser } = useAppSelector((state) => state.user);
+  const ws = useWebSocket();
+  const toast = useToast();
+  const navigate = useNavigate();
+
+  // function for user logging out
+  const handleLogOut = async () => {
+    try {
+      const logoutResponse = await axios.post(
+        `http://localhost:8000/logout?id=${currentUser?.id}`
+      );
+      console.log("Logout message: ", logoutResponse);
+      navigate("/");
+      toast({
+        title: "Logout Successful",
+        description: `You have successfully logged out of Nebula. See you soon, ${currentUser?.name}`,
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+        position: "top-right",
+      });
+    } catch (error) {
+      console.error("Error while logging out: ", error);
+    }
+  };
+
+  // once the user reaches the main chatting page, he/she is immediately to connected to websockets
+  // so that, the user is shown online
+  useEffect(() => {
+    if (currentUser && ws) {
+      console.log("New Websocket instance established: ", ws);
+      ws.onopen = () => {
+        console.log(`${currentUser.name} is connected to websockets`);
+        toast({
+          title: `${currentUser.name} is connected to websocket`,
+          status: "success",
+          duration: 4000,
+          isClosable: true,
+        });
+      };
+      ws.onmessage = (message) => {
+        console.log("Message received from server: ", message);
+      };
+      ws.onerror = () => {
+        console.error("Websocket connection error");
+      };
+      ws.onclose = () => {
+        console.log("Websocket connection closed");
+        toast({
+          title: `${currentUser.name} is disconnected from websocket`,
+          status: "error",
+          duration: 4000,
+          isClosable: true,
+        });
+      };
+    }
+  }, [currentUser, ws, toast]);
+
   return (
     <div className="min-h-screen bg-neutral-900 flex flex-row relative w-full">
       <div className="w-[6%] min-h-screen flex flex-col items-center justify-center bg-transparent z-20 px-1 font-Philosopher">
@@ -68,7 +130,10 @@ const ClientDashboard = () => {
             <p className="text-sm text-slate-400">Settings</p>
           </div>
         </div>
-        <div className="w-full hover:bg-slate-700 py-4 rounded-md hover:cursor-pointer transition duration-200 ease-in-out hover:text-slate-400 text-slate-400">
+        <div
+          className="w-full hover:bg-slate-700 py-4 rounded-md hover:cursor-pointer transition duration-200 ease-in-out hover:text-slate-400 text-slate-400"
+          onClick={handleLogOut}
+        >
           <div className="w-full flex justify-center pr-2">
             <SlLogout className="w-7 h-7" />
           </div>

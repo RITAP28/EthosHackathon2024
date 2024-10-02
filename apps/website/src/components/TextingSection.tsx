@@ -7,18 +7,24 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { User } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
+import { useWebSocket } from "../hooks/UseWebsocket";
 
 const TextingSection = () => {
   const { currentUser } = useAppSelector((state) => state.user);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
+
+  const toast = useToast();
+
+  const ws = useWebSocket();
 
   const getUsersFromDB = async () => {
     setLoading(true);
@@ -35,6 +41,65 @@ const TextingSection = () => {
       console.error("Error while getting users from database: ", error);
     }
     setLoading(false);
+  };
+
+  const handleChatButtonClick = async (receiverEmail: string) => {
+    try {
+        if(ws && ws.OPEN){
+            ws.send(
+                JSON.stringify({
+                    action: 'start-chat',
+                    targetEmail: receiverEmail
+                })
+            );
+
+            ws.onmessage = (message) => {
+                const data = JSON.parse(message.data);
+                console.log('Received message from the server: ', data);
+                if(data.message === `${receiverEmail} connected`){
+                    console.log(`${data.name} is connected to websocket`);
+                    toast({
+                        title: `${receiverEmail} is successfully connected`,
+                        description: `Now you can chat with ${receiverEmail}`,
+                        status: 'error',
+                        duration: 4000,
+                        isClosable: true
+                    });
+                };
+            };
+
+            ws.onclose = () => {
+                console.log('Websocket connection closed');
+                toast({
+                    title: `WebSocket connection closed`,
+                    description: `Now you are no longer connected to our servers`,
+                    status: 'warning',
+                    duration: 4000,
+                    isClosable: true
+                });
+            };
+
+            ws.onerror = () => {
+                console.error('Websocket connection error');
+                toast({
+                    title: `WebSocket connection Error`,
+                    description: `Something went wrong with websockets`,
+                    status: 'error',
+                    duration: 4000,
+                    isClosable: true
+                });
+            };
+        }
+    } catch (error) {
+        console.error(`Error connecting to ${receiverEmail}`, error);
+        toast({
+            title: `Error connecting to ${receiverEmail}`,
+            description: `Something went wrong with websockets`,
+            status: 'error',
+            duration: 4000,
+            isClosable: true
+        });
+    };
   };
 
   return (
@@ -77,7 +142,7 @@ const TextingSection = () => {
                 <div className="w-full flex flex-col gap-2">
                   {users.map((user, index) => (
                     <div
-                      className="w-full flex flex-row py-4 bg-slate-400"
+                      className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
                       key={index}
                     >
                       <div className="w-[20%] flex justify-center items-center">
@@ -97,6 +162,9 @@ const TextingSection = () => {
                         <button
                           type="button"
                           className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
+                          onClick={() => {
+                            handleChatButtonClick(user.email);
+                          }}
                         >
                           Chat
                         </button>
