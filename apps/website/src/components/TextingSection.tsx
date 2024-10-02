@@ -16,7 +16,7 @@ import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
 import { useWebSocket } from "../hooks/UseWebsocket";
 
-const TextingSection = () => {
+const TextingSection = ({ token } : { token: string }) => {
   const { currentUser } = useAppSelector((state) => state.user);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState<boolean>(false);
@@ -48,6 +48,7 @@ const TextingSection = () => {
         if(ws && ws.OPEN){
             ws.send(
                 JSON.stringify({
+                    token: token,
                     action: 'start-chat',
                     targetEmail: receiverEmail
                 })

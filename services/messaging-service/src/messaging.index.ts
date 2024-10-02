@@ -2,7 +2,7 @@ import express from "express";
 import { WebSocket, WebSocketServer } from "ws";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import cors from 'cors'
+import cors from "cors";
 import { ExtendedDecodedToken, ExtendedWebsocket } from "./utils/utils";
 import { getUsersFromDatabase } from "./controller/chat.controller";
 
@@ -11,10 +11,14 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 7071;
 app.use(
-    cors({
-        origin: ['http://localhost:1212','http://localhost:1213', 'http://localhost:5173'],
-        credentials: true
-    })
+  cors({
+    origin: [
+      "http://localhost:1212",
+      "http://localhost:1213",
+      "http://localhost:5173",
+    ],
+    credentials: true,
+  })
 );
 const httpServer = app.listen(port, () => {
   console.log(`Messaging-service listening on ${port}`);
@@ -32,7 +36,8 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
 
   ws.on("message", async (message: string) => {
     try {
-      const token = message.toString();
+      const parsedMessage = JSON.parse(message);
+      const token = parsedMessage.token as string;
       // jwt.verify can return either string or JWTPayload so we need to narrow it down
       const decoded = jwt.verify(token, process.env.TOKEN_SECRET_KEY as string);
       if (
@@ -43,6 +48,7 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
         const decodedToken = decoded as ExtendedDecodedToken;
         console.log("Decodedtoken Email: ", decodedToken.email);
         console.log("Decodedtoken iat: ", decodedToken.iat);
+        console.log("User has been authenticated");
         if (decodedToken) {
           ws.user = decodedToken;
           console.log(`User with email ${ws.user.email} is connected!`);
@@ -58,69 +64,62 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
             console.log(`Received message: ${message}`);
           });
 
-          ws.on("message", async function (message: string) {
-            try {
-              const parsedMessage = JSON.parse(message);
-              if (parsedMessage.action === "get-users-list") {
-                const users = await getUsersFromDatabase(ws.user.email);
+          if (parsedMessage.action === "get-users-list") {
+            const users = await getUsersFromDatabase(ws.user.email);
 
-                ws.send(
-                  JSON.stringify({
-                    action: "get-users-list",
-                    users,
-                  })
-                );
-                console.log(users);
-                console.log(
-                  `Received users for user with email ${ws.user.email}`
-                );
-              } else if (parsedMessage.action === "start-chat") {
-                const targetEmail: string = parsedMessage.targetUser;
-                const targetUserSocket = Array.from(wss.clients).find(
-                  (client) => {
-                    const extendedClient = client as ExtendedWebsocket;
-                    return extendedClient.user.user?.email === targetEmail;
-                  }
-                ) as ExtendedWebsocket;
-                if (targetUserSocket) {
-                  ws.chatPartner = targetUserSocket as ExtendedWebsocket;
-                  targetUserSocket.chatPartner = ws;
+            ws.send(
+              JSON.stringify({
+                action: "get-users-list",
+                users,
+              })
+            );
+            console.log(users);
+            console.log(`Received users for user with email ${ws.user.email}`);
+          } else if (parsedMessage.action === "start-chat") {
+            const targetEmail: string = parsedMessage.targetUser;
+            const targetUserSocket = Array.from(wss.clients).find((client) => {
+              const extendedClient = client as ExtendedWebsocket;
+              return extendedClient.user.user?.email === targetEmail;
+            }) as ExtendedWebsocket;
+            if (targetUserSocket) {
+              ws.chatPartner = targetUserSocket as ExtendedWebsocket;
+              targetUserSocket.chatPartner = ws;
 
-                  ws.send(JSON.stringify({
-                    message: `${targetEmail} connected`
-                  }));
-                  targetUserSocket.send(JSON.stringify({
-                    message: `${ws.user.user.email} connected`
-                  }));
-                } else {
-                    ws.send(
-                        JSON.stringify({
-                            message: `User not connected`,
-                        })
-                    );
-                };
-              } else if(parsedMessage.action === 'send-message'){
-                const chatPartner = ws.chatPartner;
-                if(chatPartner){
-                    chatPartner.send(
-                        JSON.stringify({
-                            action: 'receive-message',
-                            textMetadata: parsedMessage.message,
-                            from: ws.user.user.email
-                        })
-                    );
-                } else {
-                    ws.send(
-                        JSON.stringify({
-                            message: `Chat Partner not connected`
-                        })
-                    )
-                }
-              }
-            } catch (error) {
-              console.log("Socket Error while fetching list of users: ", error);
+              ws.send(
+                JSON.stringify({
+                  message: `${targetEmail} connected`,
+                })
+              );
+              targetUserSocket.send(
+                JSON.stringify({
+                  message: `${ws.user.user.email} connected`,
+                })
+              );
+            } else {
+              ws.send(
+                JSON.stringify({
+                  message: `User not connected`,
+                })
+              );
             }
-          });
+          } else if (parsedMessage.action === "send-message") {
+            const chatPartner = ws.chatPartner;
+            if (chatPartner) {
+              chatPartner.send(
+                JSON.stringify({
+                  action: "receive-message",
+                  textMetadata: parsedMessage.message,
+                  from: ws.user.user.email,
+                })
+              );
+            } else {
+              ws.send(
+                JSON.stringify({
+                  message: `Chat Partner not connected`,
+                })
+              );
+            }
+          }
 
           ws.on("error", () => {
             console.log(

@@ -81,9 +81,9 @@ export const sendTokenAfterLogin = async (
       },
     });
 
-    const existingSession = await prisma.session.findUnique({
+    const existingSession = await prisma.session.findFirst({
       where: {
-        userId: existingUser?.id
+        userId: existingUser?.id as number
       }
     });
 
@@ -100,7 +100,6 @@ export const sendTokenAfterLogin = async (
     await prisma.session.update({
       where: {
         sessionId: existingSession?.sessionId,
-        userId: existingSession?.userId
       },
       data: {
         token: token,

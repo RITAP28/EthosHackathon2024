@@ -1,12 +1,13 @@
 import Login from "./pages/authPages/Login";
 import Register from "./pages/authPages/Register";
-import ClientDashboard from "./pages/normalPages/ClientDashboard";
 import Home from "./pages/normalPages/Home";
 import { useAppSelector } from "./redux/hooks/hook";
 import { Routes, Route } from "react-router-dom";
+import { RootState } from "./redux/store";
+import ClientDashboard from "./pages/normalPages/ClientDashboard";
 
 function App() {
-  const { isAuthenticated } = useAppSelector((state) => state.user);
+  const { isAuthenticated } = useAppSelector((state: RootState) => state.user);
   return (
     <>
       <Routes>
