@@ -7,10 +7,12 @@ import { LoginSchema } from "../../lib/zodSchemas";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { LoginSuccess } from "../../redux/slices/user.slice";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const dispatch = useDispatch();
   const toast = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<User>({
     name: "",
@@ -45,6 +47,7 @@ const Home = () => {
         const loginResponse = await axios.post(`http://localhost:8000/login`, zodValidatedFormData.data);
         console.log('Login response: ', loginResponse.data);
         dispatch(LoginSuccess(loginResponse.data.user));
+        navigate('/');
         toast({
           title: 'Login Successful',
           description: `Welcome to Nebula, ${loginResponse.data.user.name}`,

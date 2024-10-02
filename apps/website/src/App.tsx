@@ -1,6 +1,6 @@
 import Login from "./pages/authPages/Login";
 import Register from "./pages/authPages/Register";
-import AuthenticatedHome from "./pages/normalPages/AuthenticatedHome";
+import ClientDashboard from "./pages/normalPages/ClientDashboard";
 import Home from "./pages/normalPages/Home";
 import { useAppSelector } from "./redux/hooks/hook";
 import { Routes, Route } from "react-router-dom";
@@ -12,7 +12,7 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={isAuthenticated ? <AuthenticatedHome /> : <Home />}
+          element={isAuthenticated ? <ClientDashboard /> : <Home />}
         />
         <Route
           path="/login"

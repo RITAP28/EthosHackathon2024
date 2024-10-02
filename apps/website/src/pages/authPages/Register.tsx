@@ -11,10 +11,12 @@ import { useDispatch } from "react-redux";
 import { RegistrationSuccess } from "../../redux/slices/user.slice";
 import { useToast } from "@chakra-ui/react";
 import { RegisterSchema } from "../../lib/zodSchemas";
+import { useNavigate } from "react-router-dom";
 
 const Register = () => {
   const dispatch = useDispatch();
   const toast = useToast();
+  const navigate = useNavigate();
   // const [error, setError] = useState<boolean>(false);
   // const [errorMsg, setErrorMsg] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -52,6 +54,7 @@ const Register = () => {
         const registerResponse = await axios.post(`http://localhost:8000/register`, zodValidatedFormData.data);
         console.log('Registration result: ', registerResponse.data.user);
         dispatch(RegistrationSuccess(registerResponse.data.user));
+        navigate('/');
         toast({
           title: 'Registration successful',
           description: `You have successfully registered for Nebula. You can begin texting now!`,
