@@ -74,7 +74,7 @@ const ClientDashboard = () => {
     } else if (ws) {
       console.log("New Websocket instance established: ", ws);
       ws.onopen = () => {
-        console.log(`${currentUser.name} is connected to websockets`);
+        console.log(`${currentUser.name} is connected to websocket`);
         toast({
           title: `${currentUser.name} is connected to websocket`,
           status: "success",
