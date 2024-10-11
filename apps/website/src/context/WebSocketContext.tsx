@@ -32,24 +32,20 @@ function WebSocketProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       console.log("Token available, connecting to websocket");
       const socket = new WebSocket("ws://localhost:8001");
+      setWs(socket);
 
       socket.onopen = () => {
         console.log("Connected to Websocket");
-        socket.send(
-          JSON.stringify({
-            token,
-          })
-        );
       };
 
       socket.onmessage = (message) => {
-        const data = JSON.parse(message.data);
-        console.log("Received message from the server: ", data);
+        // const data = JSON.parse(message.data);
+        console.log("Received message from the server: ", message);
       };
       socket.onclose = () => {
         console.log("Connection to Websocket closed");
       };
-      setWs(socket);
+      
 
       return () => {
         if (socket) socket.close();

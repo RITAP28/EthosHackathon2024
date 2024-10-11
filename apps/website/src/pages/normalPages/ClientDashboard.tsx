@@ -75,19 +75,40 @@ const ClientDashboard = () => {
       console.log("New Websocket instance established: ", ws);
       ws.onopen = () => {
         console.log(`${currentUser.name} is connected to websocket`);
-        toast({
-          title: `${currentUser.name} is connected to websocket`,
-          status: "success",
-          duration: 4000,
-          isClosable: true,
-        });
+        ws.send(
+          JSON.stringify({
+            action: "first-socket-authentication",
+            token: token
+          })
+        );
       };
+      
       ws.onmessage = (message) => {
         console.log("Message received from server: ", message);
+        const data = JSON.parse(message.data);
+        if(data.message === "Authentication failed"){
+          console.log("Authentication failed");
+          toast({
+            title: `Authentication of your token failed in the websockets`,
+            status: "error",
+            duration: 4000,
+            isClosable: true,
+          });
+        } else if(data.message.startsWith("Welcome")) {
+          console.log("Authentication of your token has been completed");
+          toast({
+            title: `${currentUser.name} has been authenticated`,
+            status: "success",
+            duration: 4000,
+            isClosable: true
+          });
+        };
       };
+
       ws.onerror = () => {
         console.error("Websocket connection error");
       };
+
       ws.onclose = () => {
         console.log("Websocket connection closed");
         toast({
@@ -98,7 +119,7 @@ const ClientDashboard = () => {
         });
       };
     }
-  }, [currentUser, ws, toast, navigate]);
+  }, [currentUser, ws, toast, navigate, token]);
 
   return (
     <div className="min-h-screen bg-neutral-900 flex flex-row relative w-full">

@@ -35,13 +35,47 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
   ws.on("message", async (message: string) => {
     try {
       const parsedMessage = JSON.parse(message);
+      console.log("parsedMessage: ", parsedMessage);
 
       // first testing and authenticating the token provided by the primary client
-      if (parsedMessage.token) {
+      if (parsedMessage.action === "first-socket-authentication") {
         const token = parsedMessage.token as string;
         let decoded;
         try {
           decoded = jwt.verify(token, process.env.TOKEN_SECRET_KEY as string);
+          console.log("decoded: ", decoded);
+          if (
+            typeof decoded === "object" &&
+            decoded !== null &&
+            "email" in decoded
+          ) {
+            // if everything's good
+            const decodedToken = decoded as ExtendedDecodedToken;
+            console.log("Decoded token: ", decodedToken);
+            console.log("Decodedtoken Email: ", decodedToken.email);
+
+            ws.user = decodedToken;
+            console.log("Ws User after getting assigned: ", ws.user);
+
+            console.log(`User with email ${decodedToken.email} has connected`);
+
+            ws.send(
+              JSON.stringify({
+                message: `Welcome to the chat, ${decodedToken.email}`,
+                user: ws.user,
+              })
+            );
+          } else {
+            console.log("Token does not contain required fields");
+            ws.send(
+              JSON.stringify({
+                message: "Authentication failed",
+                error: "Token does not contain required fields ",
+              })
+            );
+            ws.close();
+            return;
+          }
         } catch (error) {
           console.error("Token verification failed: ", error);
           ws.send(
@@ -53,58 +87,38 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
           ws.close();
           return;
         }
-
-        if (
-          typeof decoded === "object" &&
-          decoded !== null &&
-          "email" in decoded
-        ) {
-          // if everything's good
-          const decodedToken = decoded as ExtendedDecodedToken;
-          console.log("Decodedtoken Email: ", decodedToken.user.email);
-
-          ws.user = decodedToken;
-
-          console.log(
-            `User with email ${decodedToken.user.email} has connected`
-          );
-
-          ws.send(
-            JSON.stringify({
-              message: `Welcome to the chat, ${decodedToken.user.email}`,
-            })
-          );
-        } else {
-          ws.send(
-            JSON.stringify({
-              message: "Authentication failed",
-              error: "Token does not contain required fields ",
-            })
-          );
-        }
-      } else {
-        ws.send(
-          JSON.stringify({
-            message: "Authentication failed",
-            error: "No token provided",
-          })
-        );
-        ws.close();
-        return;
       }
 
       // then, you can send anything. like here, after verifying token, we then send a request to start the chat section
-      if (parsedMessage.action === "start-action") {
+      if (parsedMessage.action === "start-chat") {
         const targetEmail: string = parsedMessage.targetEmail;
+        console.log("TargetEmail: ", targetEmail);
+
+        const arraysOfClients = [];
+        arraysOfClients.push(wss.clients);
+        console.log("Array of clients: ", arraysOfClients);
+
+        wss.clients.forEach((client) => {
+          const extendedClient = client as ExtendedWebsocket;
+          console.log("Extended User property: ", extendedClient.user);
+        });
 
         const targetUserSocket = Array.from(wss.clients).find((client) => {
           const extendedClient = client as ExtendedWebsocket;
-          return extendedClient.user?.user?.email === targetEmail;
-        }) as ExtendedWebsocket;
+          return extendedClient?.user?.email === targetEmail;
+        }) as ExtendedWebsocket | undefined;
+
+        console.log("target user socket email: ", targetUserSocket?.user.email);
+        // console.log(
+        //   "chat partner email: ",
+        //   targetUserSocket?.chatPartner.user.email
+        // );
 
         if (targetUserSocket) {
           ws.chatPartner = targetUserSocket;
           targetUserSocket.chatPartner = ws;
+
+          console.log("chat partner email: ", targetUserSocket.chatPartner.user.email);
 
           ws.send(
             JSON.stringify({
@@ -113,16 +127,16 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
           );
           targetUserSocket.send(
             JSON.stringify({
-              message: `${ws.user.user.email} connected`,
+              message: `${ws.user.email} connected`,
             })
           );
         } else {
+          console.log(`Target user ${targetEmail} not found`);
           ws.send(
             JSON.stringify({
               message: "User not connected",
             })
           );
-          ws.close();
           return;
         }
       }
@@ -135,7 +149,7 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
             JSON.stringify({
               action: "receive-message",
               textMetadata: parsedMessage.message,
-              from: ws.user.user.email,
+              from: ws.user.email,
             })
           );
         } else {
@@ -155,7 +169,6 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
           message: `Error while authenticating the user`,
         })
       );
-      ws.close();
       return;
     }
   });

@@ -47,30 +47,20 @@ const TextingSection = ({ token }: { token: string }) => {
   const handleChatButtonClick = async (receiverEmail: string) => {
     try {
       if (ws && ws.OPEN) {
-        console.log("First sending the token...");
         ws.send(
           JSON.stringify({
-            token: token,
+            action: "start-chat",
+            targetEmail: receiverEmail
           })
         );
 
         ws.onmessage = (message) => {
           const data = JSON.parse(message.data);
           console.log("Received message from the server: ", data);
-          if (data.message === "Authentication failed") {
-            console.error("WebSocket authentication failed");
+          if (data.message === `Target user ${receiverEmail} not found`) {
+            console.error("Connection to targetUser failed");
             return;
-          }
-          if (data.message.startsWith("Welcome")) {
-            console.log("WebSocket authentication completed");
-            ws.send(
-              JSON.stringify({
-                action: "start-chat",
-                targetEmail: receiverEmail,
-              })
-            );
-          }
-
+          };
           if (data.message === `${receiverEmail} connected`) {
             console.log(`${receiverEmail} has connected to the chat`);
             toast({
@@ -80,7 +70,7 @@ const TextingSection = ({ token }: { token: string }) => {
               duration: 4000,
               isClosable: true,
             });
-          }
+          };
         };
 
         ws.onclose = () => {

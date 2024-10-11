@@ -35,7 +35,7 @@ function WebSocketProvider({ children }: { children: React.ReactNode }) {
       console.log('Token available, connecting to WebSocket');
       const socket = new WebSocket('ws://localhost:8001');
       socket.onopen = () => {
-        console.log(`WebSocker connection established`);
+        console.log(`WebSocket connection established`);
         socket.send(token);
       };
       socket.onmessage = (message) => {

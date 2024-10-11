@@ -19,11 +19,11 @@ interface User {
 }
 
 export interface ExtendedDecodedToken extends JwtPayload {
-    user: User;
+    email: string;
     iat: number;
 };
 
 export interface ExtendedWebsocket extends WebSocket {
     user: ExtendedDecodedToken;
-    chatPartner: ExtendedWebsocket
+    chatPartner: ExtendedWebsocket;
 }
