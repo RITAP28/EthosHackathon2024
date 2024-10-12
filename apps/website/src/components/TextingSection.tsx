@@ -9,8 +9,8 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { useState } from "react";
-import { User } from "../lib/interface";
+import { useEffect, useState } from "react";
+import { ChatPartner, User } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
@@ -24,7 +24,11 @@ const TextingSection = ({ token }: { token: string }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
   const [currentChat, setCurrentChat] = useState<string>("");
+  const [currentChatName, setCurrentChatName] = useState<string>("");
   const [chatWindow, setChatWindow] = useState<boolean>(false);
+
+  const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
+  const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
 
   const toast = useToast();
 
@@ -55,7 +59,7 @@ const TextingSection = ({ token }: { token: string }) => {
   ) => {
     try {
       const insertChatPartnerResponse = await axios.post(
-        `http://localhost:8001/insertchatpartner`,
+        `http://localhost:8000/insertchatpartner`,
         {
           senderId,
           chatPartnerId,
@@ -138,6 +142,31 @@ const TextingSection = ({ token }: { token: string }) => {
     }
   };
 
+  const fetchingChatPartnersFromDatabase = async (senderId: number) => {
+    setLoadingPartners(true);
+    try {
+      const chatPartners = await axios.get(
+        `http://localhost:8000/getchatpartnersfromdb?senderId=${senderId}`,
+        {
+          withCredentials: true,
+        }
+      );
+      console.log("Here are your chat partners: ", chatPartners.data);
+      setChatPartners(chatPartners.data.chatPartners);
+    } catch (error) {
+      console.error(
+        "Error while fetching chat partners from database: ",
+        error
+      );
+    }
+    setLoadingPartners(false);
+  };
+
+  useEffect(() => {
+    // getting the chat partners from the database
+    fetchingChatPartnersFromDatabase(currentUser?.id as number);
+  }, [currentUser]);
+
   return (
     <div className="w-full flex justify-start items-center h-[100%]">
       <div className="w-[99%] h-[97%] bg-slate-300 rounded-2xl">
@@ -156,12 +185,18 @@ const TextingSection = ({ token }: { token: string }) => {
               />
             </div>
             <div className="w-full flex justify-center pt-2">
-              <p className="w-[70%] font-Philosopher">
-                Users you chat with will appear here
-              </p>
+                {loadingPartners
+                  ? "Loading your partners..."
+                  : chatPartners.length > 0
+                  ? chatPartners.map((partner, index) => (
+                      <p className="" key={index}>
+                        {partner.chatPartnerName}
+                      </p>
+                    ))
+                  : "Users you chat with will appear here."}
             </div>
           </div>
-          {currentChat === "" && !chatWindow ? (
+          {currentChat === "" && currentChatName === "" && !chatWindow ? (
             <div className="w-[70%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
               <div className="w-full h-[90%] flex justify-center items-center">
                 <p className="font-bold font-Philosopher">
@@ -177,9 +212,9 @@ const TextingSection = ({ token }: { token: string }) => {
               </div>
             </div>
           ) : (
-            <div className="w-[70%] h-[100%] bg-slate-400">
-              <div className="w-full h-[10%] bg-red-300">
-                <p className="">{currentChat}</p>
+            <div className="w-[70%] h-[100%] bg-slate-400 rounded-r-2xl">
+              <div className="w-full h-[10%] bg-red-300 rounded-tr-2xl">
+                <p className="flex items-center">{currentChatName}</p>
               </div>
             </div>
           )}
@@ -222,6 +257,7 @@ const TextingSection = ({ token }: { token: string }) => {
                           className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
                           onClick={() => {
                             handleChatButtonClick(user.email);
+                            setCurrentChatName(user.name);
                             insertingChatPartnerInDB(
                               currentUser?.id as number,
                               user.id,

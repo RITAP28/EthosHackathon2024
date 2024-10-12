@@ -51,4 +51,6 @@ model ChatPartners {
   chatPartnerId   Int
   chatPartnerName String
   startedAt       DateTime @default(now())
+
+  @@unique([senderId, chatPartnerId])
 }

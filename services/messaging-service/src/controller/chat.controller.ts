@@ -30,24 +30,3 @@ export async function findUserSocket(email: string) {
     console.error("Error while finding receiver socket: ", error);
   };
 };
-
-export async function insertingChatPartnerintoDB(req: Request, res: Response) {
-  const { senderId, chatPartnerId, senderName, chatPartnerName } = req.body;
-  try {
-    await prisma.chatPartners.create({
-      data: {
-        senderId: Number(senderId),
-        chatPartnerId: Number(chatPartnerId),
-        senderName: senderName as string,
-        chatPartnerName: chatPartnerName as string,
-        startedAt: new Date(Date.now())
-      }
-    });
-  } catch (error) {
-    console.error("Error while inserting chat partner into db: ", error);
-    return res.status(500).json({
-      success: false,
-      msg: "Internal Server Error"
-    });
-  };
-};
