@@ -14,10 +14,6 @@ export interface Text extends Document {
     isRead: boolean;
 }
 
-interface User {
-    email: string;
-}
-
 export interface ExtendedDecodedToken extends JwtPayload {
     email: string;
     iat: number;

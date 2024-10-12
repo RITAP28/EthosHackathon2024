@@ -39,7 +39,6 @@ function WebSocketProvider({ children }: { children: React.ReactNode }) {
       };
 
       socket.onmessage = (message) => {
-        // const data = JSON.parse(message.data);
         console.log("Received message from the server: ", message);
       };
       socket.onclose = () => {

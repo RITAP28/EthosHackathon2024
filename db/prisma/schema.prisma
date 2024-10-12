@@ -43,3 +43,12 @@ model Chat {
   isRead       Boolean  @default(false)
   user         User     @relation(references: [id], fields: [senderId], onDelete: Cascade)
 }
+
+model ChatPartners {
+  id              Int      @id @unique @default(autoincrement())
+  senderId        Int
+  senderName      String
+  chatPartnerId   Int
+  chatPartnerName String
+  startedAt       DateTime @default(now())
+}

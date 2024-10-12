@@ -15,6 +15,7 @@ import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
 import { useWebSocket } from "../hooks/UseWebsocket";
+import { CiLock } from "react-icons/ci";
 
 const TextingSection = ({ token }: { token: string }) => {
   console.log(token);
@@ -22,6 +23,8 @@ const TextingSection = ({ token }: { token: string }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [currentChat, setCurrentChat] = useState<string>("");
+  const [chatWindow, setChatWindow] = useState<boolean>(false);
 
   const toast = useToast();
 
@@ -44,13 +47,38 @@ const TextingSection = ({ token }: { token: string }) => {
     setLoading(false);
   };
 
+  const insertingChatPartnerInDB = async (
+    senderId: number,
+    chatPartnerId: number,
+    senderName: string,
+    chatPartnerName: string
+  ) => {
+    try {
+      const insertChatPartnerResponse = await axios.post(
+        `http://localhost:8001/insertchatpartner`,
+        {
+          senderId,
+          chatPartnerId,
+          senderName,
+          chatPartnerName,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      console.log("Response: ", insertChatPartnerResponse);
+    } catch (error) {
+      console.error("Error while inserting chat partner in database: ", error);
+    }
+  };
+
   const handleChatButtonClick = async (receiverEmail: string) => {
     try {
       if (ws && ws.OPEN) {
         ws.send(
           JSON.stringify({
             action: "start-chat",
-            targetEmail: receiverEmail
+            targetEmail: receiverEmail,
           })
         );
 
@@ -60,9 +88,11 @@ const TextingSection = ({ token }: { token: string }) => {
           if (data.message === `Target user ${receiverEmail} not found`) {
             console.error("Connection to targetUser failed");
             return;
-          };
+          }
           if (data.message === `${receiverEmail} connected`) {
             console.log(`${receiverEmail} has connected to the chat`);
+            setChatWindow(true);
+            setCurrentChat(receiverEmail);
             toast({
               title: `${receiverEmail} has connected to the chat`,
               description: `You can now chat with ${receiverEmail}`,
@@ -70,7 +100,8 @@ const TextingSection = ({ token }: { token: string }) => {
               duration: 4000,
               isClosable: true,
             });
-          };
+            onClose();
+          }
         };
 
         ws.onclose = () => {
@@ -130,6 +161,28 @@ const TextingSection = ({ token }: { token: string }) => {
               </p>
             </div>
           </div>
+          {currentChat === "" && !chatWindow ? (
+            <div className="w-[70%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
+              <div className="w-full h-[90%] flex justify-center items-center">
+                <p className="font-bold font-Philosopher">
+                  This is your alternative to the <br /> Boring Whats-App you
+                  have been using!
+                </p>
+              </div>
+              <div className="w-full h-[10%] flex justify-center">
+                <p className="flex items-center gap-2 font-semibold font-Philosopher">
+                  <CiLock />
+                  Your personal messages are end-to-end encrypted
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-[70%] h-[100%] bg-slate-400">
+              <div className="w-full h-[10%] bg-red-300">
+                <p className="">{currentChat}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="">
@@ -169,6 +222,12 @@ const TextingSection = ({ token }: { token: string }) => {
                           className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
                           onClick={() => {
                             handleChatButtonClick(user.email);
+                            insertingChatPartnerInDB(
+                              currentUser?.id as number,
+                              user.id,
+                              currentUser?.name as string,
+                              user.name
+                            );
                           }}
                         >
                           Chat

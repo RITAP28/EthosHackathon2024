@@ -109,16 +109,12 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
         }) as ExtendedWebsocket | undefined;
 
         console.log("target user socket email: ", targetUserSocket?.user.email);
-        // console.log(
-        //   "chat partner email: ",
-        //   targetUserSocket?.chatPartner.user.email
-        // );
 
         if (targetUserSocket) {
           ws.chatPartner = targetUserSocket;
           targetUserSocket.chatPartner = ws;
 
-          console.log("chat partner email: ", targetUserSocket.chatPartner.user.email);
+          console.log("targetUserSocket chat partner email: ", targetUserSocket.chatPartner.user.email);
 
           ws.send(
             JSON.stringify({
