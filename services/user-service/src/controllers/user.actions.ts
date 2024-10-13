@@ -42,20 +42,41 @@ export const getUsersFromDB = async (req: Request, res: Response) => {
 };
 
 export async function insertingChatPartnerintoDB(req: Request, res: Response) {
-  const { senderId, chatPartnerId, senderName, chatPartnerName } = req.body;
+  const {
+    senderId,
+    chatPartnerId,
+    senderName,
+    chatPartnerName,
+    chatPartnerEmail,
+  } = req.body;
   try {
-    await prisma.chatPartners.create({
-      data: {
-        senderId: Number(senderId),
-        chatPartnerId: Number(chatPartnerId),
-        senderName: senderName as string,
-        chatPartnerName: chatPartnerName as string,
-        startedAt: new Date(Date.now()),
+    const existingChatPartner = await prisma.chatPartners.findUnique({
+      where: {
+        senderId_chatPartnerId: {
+          senderId: Number(senderId),
+          chatPartnerId: Number(chatPartnerId),
+        },
       },
     });
-    return res.status(200).json({
+    if (!existingChatPartner) {
+      await prisma.chatPartners.create({
+        data: {
+          senderId: Number(senderId),
+          chatPartnerId: Number(chatPartnerId),
+          senderName: senderName as string,
+          chatPartnerName: chatPartnerName as string,
+          chatPartnerEmail: chatPartnerEmail as string,
+          startedAt: new Date(Date.now()),
+        },
+      });
+      return res.status(201).json({
+        success: true,
+        msg: `${chatPartnerName} has been added to the chat partners of ${senderName} successfully`,
+      });
+    }
+    return res.status(409).json({
       success: true,
-      msg: `${chatPartnerName} has been added to the chat partners of ${senderName} successfully`,
+      msg: `${chatPartnerName} is already a chat partner of ${senderName}`,
     });
   } catch (error) {
     console.error("Error while inserting chat partner into db: ", error);
@@ -77,16 +98,50 @@ export async function getChatPartnersFromDB(req: Request, res: Response) {
         id: true,
         chatPartnerId: true,
         chatPartnerName: true,
-        startedAt: true
-      }
+        chatPartnerEmail: true,
+        startedAt: true,
+      },
     });
     return res.status(200).json({
       success: true,
       chatPartners: chatPartners,
-      msg: `chat partners for sender with id ${senderId} found successfully`
+      msg: `chat partners for sender with id ${senderId} found successfully`,
     });
   } catch (error) {
     console.error("Error while fetching chat partners from db: ", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error",
+    });
+  }
+}
+
+export async function getDetailsAboutChatPartner(req: Request, res: Response) {
+  const { receiverEmail } = req.query;
+  try {
+    const chatPartnerName = await prisma.user.findUnique({
+      where: {
+        email: receiverEmail as string,
+      },
+      select: {
+        name: true,
+        isAuthenticated: true,
+        role: true
+      }
+    });
+    if (!chatPartnerName) {
+      return res.status(404).json({
+        success: false,
+        msg: `User with email ${receiverEmail} not found`,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      msg: `User with email ${receiverEmail} found`,
+      chatPartnerName: chatPartnerName,
+    });
+  } catch (error) {
+    console.error("Error while fetching chat partner details from db: ", error);
     return res.status(500).json({
       success: false,
       msg: "Internal Server Error",

@@ -23,10 +23,14 @@ const TextingSection = ({ token }: { token: string }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
+
+  // states for texting window
   const [currentChat, setCurrentChat] = useState<string>("");
   const [currentChatName, setCurrentChatName] = useState<string>("");
   const [chatWindow, setChatWindow] = useState<boolean>(false);
+  const [loadingWindow, setLoadingWindow] = useState<boolean>(false);
 
+  // states for chat partners
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
   const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
 
@@ -55,7 +59,8 @@ const TextingSection = ({ token }: { token: string }) => {
     senderId: number,
     chatPartnerId: number,
     senderName: string,
-    chatPartnerName: string
+    chatPartnerName: string,
+    chatPartnerEmail: string
   ) => {
     try {
       const insertChatPartnerResponse = await axios.post(
@@ -65,6 +70,7 @@ const TextingSection = ({ token }: { token: string }) => {
           chatPartnerId,
           senderName,
           chatPartnerName,
+          chatPartnerEmail,
         },
         {
           withCredentials: true,
@@ -77,6 +83,7 @@ const TextingSection = ({ token }: { token: string }) => {
   };
 
   const handleChatButtonClick = async (receiverEmail: string) => {
+    setLoadingWindow(true);
     try {
       if (ws && ws.OPEN) {
         ws.send(
@@ -95,8 +102,10 @@ const TextingSection = ({ token }: { token: string }) => {
           }
           if (data.message === `${receiverEmail} connected`) {
             console.log(`${receiverEmail} has connected to the chat`);
+            getDetailsAboutChatPartner(receiverEmail);
             setChatWindow(true);
             setCurrentChat(receiverEmail);
+            fetchingChatPartnersFromDatabase(currentUser?.id as number);
             toast({
               title: `${receiverEmail} has connected to the chat`,
               description: `You can now chat with ${receiverEmail}`,
@@ -139,7 +148,8 @@ const TextingSection = ({ token }: { token: string }) => {
         duration: 4000,
         isClosable: true,
       });
-    }
+    };
+    setLoadingWindow(false);
   };
 
   const fetchingChatPartnersFromDatabase = async (senderId: number) => {
@@ -167,16 +177,37 @@ const TextingSection = ({ token }: { token: string }) => {
     fetchingChatPartnersFromDatabase(currentUser?.id as number);
   }, [currentUser]);
 
+  const getDetailsAboutChatPartner = async (receiverEmail: string) => {
+    try {
+      const chatPartnerDetailResponse = await axios.get(
+        `http://localhost:8000/getchatpartnerdetail`,
+        {
+          params: {
+            receiverEmail,
+          },
+          withCredentials: true,
+        }
+      );
+      console.log(
+        "Details about your chat partner: ",
+        chatPartnerDetailResponse.data
+      );
+      setCurrentChatName(chatPartnerDetailResponse.data.chatPartnerName.name);
+    } catch (error) {
+      console.error("Error while fetching details about chat partner: ", error);
+    }
+  };
+
   return (
     <div className="w-full flex justify-start items-center h-[100%]">
       <div className="w-[99%] h-[97%] bg-slate-300 rounded-2xl">
         <div className="w-full h-full flex flex-row">
-          <div className="w-[30%] h-[100%] flex flex-col">
+          <div className="w-[25%] h-[100%] flex flex-col">
             <div className="w-full flex justify-center pt-4">
               <input
                 type="search"
                 name=""
-                className="w-[70%] py-2 pl-4 bg-slate-400 text-white rounded-lg placeholder:text-white font-Philosopher"
+                className="w-[90%] py-2 pl-4 bg-slate-400 text-white rounded-lg placeholder:text-white font-Philosopher"
                 placeholder="Search"
                 onClick={() => {
                   onOpen();
@@ -185,19 +216,40 @@ const TextingSection = ({ token }: { token: string }) => {
               />
             </div>
             <div className="w-full flex justify-center pt-2">
-                {loadingPartners
-                  ? "Loading your partners..."
-                  : chatPartners.length > 0
-                  ? chatPartners.map((partner, index) => (
-                      <p className="" key={index}>
-                        {partner.chatPartnerName}
-                      </p>
-                    ))
-                  : "Users you chat with will appear here."}
+              {loadingPartners
+                ? "Loading your partners..."
+                : chatPartners.length > 0
+                ? chatPartners.map((partner, index) => (
+                    <div
+                      className="w-[90%] bg-slate-400 flex flex-row py-2 rounded-xl hover:bg-slate-500 hover:cursor-pointer transition ease-in-out duration-200"
+                      key={index}
+                      onClick={() => {
+                        handleChatButtonClick(partner.chatPartnerEmail);
+                      }}
+                    >
+                      <div className="w-[25%] h-full flex justify-center items-center">
+                        <div className="bg-slate-300 p-3 rounded-xl">
+                          <FaUser className="text-[2rem]" />
+                        </div>
+                      </div>
+                      <div className="w-[75%] flex flex-col">
+                        <div className="w-full h-[40%] flex flex-row justify-between pr-3">
+                          <div>{partner.chatPartnerName}</div>
+                          <div className="">{"20m"}</div>
+                        </div>
+                        <div className="w-full h-[60%]">
+                          {partner.chatPartnerId}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                : "Users you chat with will appear here."}
             </div>
           </div>
-          {currentChat === "" && currentChatName === "" && !chatWindow ? (
-            <div className="w-[70%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
+          {loadingWindow ? (
+            "Loading Chat Window..."
+          ) : currentChat === "" && currentChatName === "" && !chatWindow ? (
+            <div className="w-[75%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
               <div className="w-full h-[90%] flex justify-center items-center">
                 <p className="font-bold font-Philosopher">
                   This is your alternative to the <br /> Boring Whats-App you
@@ -212,7 +264,7 @@ const TextingSection = ({ token }: { token: string }) => {
               </div>
             </div>
           ) : (
-            <div className="w-[70%] h-[100%] bg-slate-400 rounded-r-2xl">
+            <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl">
               <div className="w-full h-[10%] bg-red-300 rounded-tr-2xl">
                 <p className="flex items-center">{currentChatName}</p>
               </div>
@@ -262,7 +314,8 @@ const TextingSection = ({ token }: { token: string }) => {
                               currentUser?.id as number,
                               user.id,
                               currentUser?.name as string,
-                              user.name
+                              user.name,
+                              user.email
                             );
                           }}
                         >

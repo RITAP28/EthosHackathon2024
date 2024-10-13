@@ -8,5 +8,6 @@ export interface ChatPartner {
     id: number;
     chatPartnerId: number;
     chatPartnerName: string;
+    chatPartnerEmail: string;
     startedAt: Date;
 };
