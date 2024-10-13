@@ -9,7 +9,7 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { ChatPartner, User } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
@@ -154,6 +154,7 @@ const TextingSection = ({ token }: { token: string }) => {
         status: "error",
         duration: 4000,
         isClosable: true,
+        position: "top-right",
       });
     }
     setLoadingWindow(false);
@@ -207,23 +208,80 @@ const TextingSection = ({ token }: { token: string }) => {
 
   const handleSendButtonClick = async (receiverEmail: string) => {
     try {
-      if(ws && ws.OPEN){
+      if (ws && ws.OPEN) {
         ws.send(
           JSON.stringify({
-            action: 'send-message',
+            action: "send-message",
             targetEmail: receiverEmail,
-            message: textMessage
+            message: textMessage,
           })
         );
 
         ws.onmessage = (message) => {
           const data = JSON.parse(message.data);
           console.log("Received message from the server: ", data);
-        }
+          if (
+            data.message === `Message sent to ${receiverEmail} successfully`
+          ) {
+            toast({
+              title: `Message sent successfully to ${receiverEmail}`,
+              status: "success",
+              duration: 4000,
+              isClosable: true,
+              position: "top-right",
+            });
+          } else if (
+            data.message ===
+            `Chat Partner not matching with the one in the socket`
+          ) {
+            toast({
+              title: `Chat Partner Email mismatch happened`,
+              status: "error",
+              duration: 4000,
+              isClosable: true,
+              position: "top-right",
+            });
+            console.log("Chat Partner Email mismatch happened");
+            return;
+          } else if (
+            data.message ===
+            `Received message from ${receiverEmail} successfully`
+          ) {
+            toast({
+              title: `Received message from ${receiverEmail} successfully`,
+              status: "success",
+              duration: 4000,
+              isClosable: true,
+              position: "top-right",
+            });
+          }
+        };
+
+        ws.onclose = () => {
+          console.log("Websocket connection closed");
+          toast({
+            title: `WebSocket connection closed`,
+            description: `Now you are no longer connected to our servers`,
+            status: "warning",
+            duration: 4000,
+            isClosable: true,
+          });
+        };
+
+        ws.onerror = () => {
+          console.error("Websocket connection error");
+          toast({
+            title: `WebSocket connection Error`,
+            description: `Something went wrong with websockets`,
+            status: "error",
+            duration: 4000,
+            isClosable: true,
+          });
+        };
       }
     } catch (error) {
-      console.error('Error while sending message: ', error);
-    };
+      console.error("Error while sending message: ", error);
+    }
   };
 
   return (
@@ -325,6 +383,10 @@ const TextingSection = ({ token }: { token: string }) => {
                       id=""
                       className="w-full px-3 py-2 h-[2rem] bg-slate-200 font-Poppins rounded-lg"
                       placeholder="Your Message"
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        e.preventDefault();
+                        setTextMessage(e.target.value);
+                      }}
                     />
                   </div>
                 </div>
@@ -335,7 +397,12 @@ const TextingSection = ({ token }: { token: string }) => {
                     </div>
                   </div>
                   <div className="basis-1/2 flex justify-center items-center">
-                    <div className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full">
+                    <div
+                      className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full"
+                      onClick={() => {
+                        handleSendButtonClick(currentChat);
+                      }}
+                    >
                       <IoSend className="text-[1.5rem]" />
                     </div>
                   </div>

@@ -22,7 +22,7 @@ app.use(
 );
 const httpServer = app.listen(port, () => {
   console.log(`Messaging-service listening on ${port}`);
-  connectToDatabase();
+  // connectToDatabase();
 });
 
 app.use(express.json());
@@ -116,7 +116,10 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
           ws.chatPartner = targetUserSocket;
           targetUserSocket.chatPartner = ws;
 
-          console.log("targetUserSocket chat partner email: ", targetUserSocket.chatPartner.user.email);
+          console.log(
+            "targetUserSocket chat partner email: ",
+            targetUserSocket.chatPartner.user.email
+          );
 
           ws.send(
             JSON.stringify({
@@ -143,25 +146,44 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
       if (parsedMessage.action === "send-message") {
         const chatPartner = parsedMessage.targetEmail as string;
         const SocketChatPartner = ws.chatPartner;
+        console.log("chat partner email: ", chatPartner);
         if (chatPartner === SocketChatPartner.user.email) {
+          // sending the data to the client attached to the SocketChatPartner
           SocketChatPartner.send(
             JSON.stringify({
               action: "receive-message",
               textMetadata: parsedMessage.message,
               from: ws.user.email,
+              to: chatPartner,
             })
           );
-          console.log('message sent to chat partner');
-          return;
-        } else {
           ws.send(
             JSON.stringify({
-              message: "Chat Partner not matching with the one in the socket"
+              message: `Message sent to ${chatPartner} successfully`,
+            })
+          );
+          console.log(`Message sent to chat partner ${chatPartner}`);
+          return;
+        } else {
+          console.log(
+            `Chat Partner ${chatPartner} not matching with the one in the socket`
+          );
+          ws.send(
+            JSON.stringify({
+              message: "Chat Partner not matching with the one in the socket",
             })
           );
           ws.close(1008, "Chat Partner mismatch"); // 1008 is for policy violation
           return;
         }
+      } else if (parsedMessage.action === "receive-message") {
+        const senderEmail = parsedMessage.from as string;
+        ws.send(
+          JSON.stringify({
+            message: `Received message from ${senderEmail} successfully`,
+          })
+        );
+        console.log(`Received message from ${senderEmail}`);
       }
     } catch (error) {
       console.error("Websocker error: ", error);

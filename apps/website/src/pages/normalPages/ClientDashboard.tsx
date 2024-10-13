@@ -86,6 +86,7 @@ const ClientDashboard = () => {
       ws.onmessage = (message) => {
         console.log("Message received from server: ", message);
         const data = JSON.parse(message.data);
+        console.log('data received from the server: ', data);
         if(data.message === "Authentication failed"){
           console.log("Authentication failed");
           toast({
@@ -94,7 +95,7 @@ const ClientDashboard = () => {
             duration: 4000,
             isClosable: true,
           });
-        } else if(data.message.startsWith("Welcome")) {
+        } else if(data.message === `Welcome to the chat, ${currentUser.email}`) {
           console.log("Authentication of your token has been completed");
           toast({
             title: `${currentUser.name} has been authenticated`,
