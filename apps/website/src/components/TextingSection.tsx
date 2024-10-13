@@ -16,6 +16,11 @@ import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
 import { useWebSocket } from "../hooks/UseWebsocket";
 import { CiLock } from "react-icons/ci";
+import { FcVideoCall } from "react-icons/fc";
+import { CiMenuKebab } from "react-icons/ci";
+import { GoPaperclip } from "react-icons/go";
+import { MdKeyboardVoice } from "react-icons/md";
+import { IoSend } from "react-icons/io5";
 
 const TextingSection = ({ token }: { token: string }) => {
   console.log(token);
@@ -33,6 +38,8 @@ const TextingSection = ({ token }: { token: string }) => {
   // states for chat partners
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
   const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
+
+  const [textMessage, setTextMessage] = useState<string>("");
 
   const toast = useToast();
 
@@ -148,7 +155,7 @@ const TextingSection = ({ token }: { token: string }) => {
         duration: 4000,
         isClosable: true,
       });
-    };
+    }
     setLoadingWindow(false);
   };
 
@@ -196,6 +203,27 @@ const TextingSection = ({ token }: { token: string }) => {
     } catch (error) {
       console.error("Error while fetching details about chat partner: ", error);
     }
+  };
+
+  const handleSendButtonClick = async (receiverEmail: string) => {
+    try {
+      if(ws && ws.OPEN){
+        ws.send(
+          JSON.stringify({
+            action: 'send-message',
+            targetEmail: receiverEmail,
+            message: textMessage
+          })
+        );
+
+        ws.onmessage = (message) => {
+          const data = JSON.parse(message.data);
+          console.log("Received message from the server: ", data);
+        }
+      }
+    } catch (error) {
+      console.error('Error while sending message: ', error);
+    };
   };
 
   return (
@@ -264,9 +292,54 @@ const TextingSection = ({ token }: { token: string }) => {
               </div>
             </div>
           ) : (
-            <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl">
-              <div className="w-full h-[10%] bg-red-300 rounded-tr-2xl">
-                <p className="flex items-center">{currentChatName}</p>
+            <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between">
+              <div className="w-full h-[10%] flex flex-row bg-slate-500 rounded-tr-2xl">
+                <div className="w-[10%] flex justify-center items-center">
+                  <div className="p-3 bg-slate-400 rounded-xl">
+                    <FaUser className="text-[2rem]" />
+                  </div>
+                </div>
+                <div className="w-[60%] flex justify-start items-center">
+                  <p className="text-xl font-Philosopher font-semibold">
+                    {currentChatName}
+                  </p>
+                </div>
+                <div className="w-[30%] flex flex-row justify-end items-center gap-4 pr-4">
+                  <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
+                    <FcVideoCall className="text-[2rem]" />
+                  </div>
+                  <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
+                    <CiMenuKebab className="text-[1.8rem]" />
+                  </div>
+                </div>
+              </div>
+              <div className="w-full bg-slate-500 flex flex-row h-[3.5rem]">
+                <div className="w-[5%] flex justify-center items-center">
+                  <GoPaperclip className="text-[1.5rem]" />
+                </div>
+                <div className="w-[80%] flex justify-start items-center">
+                  <div className="w-[90%]">
+                    <input
+                      type="text"
+                      name=""
+                      id=""
+                      className="w-full px-3 py-2 h-[2rem] bg-slate-200 font-Poppins rounded-lg"
+                      placeholder="Your Message"
+                    />
+                  </div>
+                </div>
+                <div className="w-[15%] flex flex-row">
+                  <div className="basis-1/2 flex justify-center items-center">
+                    <div className="p-3 bg-slate-600 rounded-full hover:cursor-pointer hover:bg-red-400">
+                      <MdKeyboardVoice className="text-[1.5rem]" />
+                    </div>
+                  </div>
+                  <div className="basis-1/2 flex justify-center items-center">
+                    <div className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full">
+                      <IoSend className="text-[1.5rem]" />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

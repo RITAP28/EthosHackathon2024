@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import cors from "cors";
 import { ExtendedDecodedToken, ExtendedWebsocket } from "./utils/utils";
+import connectToDatabase from "./config/db.connection";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(
 );
 const httpServer = app.listen(port, () => {
   console.log(`Messaging-service listening on ${port}`);
+  connectToDatabase();
 });
 
 app.use(express.json());
@@ -139,22 +141,25 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
 
       // handling messages between the client and the target user account
       if (parsedMessage.action === "send-message") {
-        const chatPartner = ws.chatPartner;
-        if (chatPartner) {
-          chatPartner.send(
+        const chatPartner = parsedMessage.targetEmail as string;
+        const SocketChatPartner = ws.chatPartner;
+        if (chatPartner === SocketChatPartner.user.email) {
+          SocketChatPartner.send(
             JSON.stringify({
               action: "receive-message",
               textMetadata: parsedMessage.message,
               from: ws.user.email,
             })
           );
+          console.log('message sent to chat partner');
+          return;
         } else {
           ws.send(
             JSON.stringify({
-              message: "Chat Partner not connected",
+              message: "Chat Partner not matching with the one in the socket"
             })
           );
-          ws.close();
+          ws.close(1008, "Chat Partner mismatch"); // 1008 is for policy violation
           return;
         }
       }
@@ -162,7 +167,7 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
       console.error("Websocker error: ", error);
       ws.send(
         JSON.stringify({
-          message: `Error while authenticating the user`,
+          message: `An error occurred while processing the message`,
         })
       );
       return;
