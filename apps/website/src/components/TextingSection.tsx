@@ -351,6 +351,7 @@ const TextingSection = ({ token }: { token: string }) => {
             </div>
           ) : (
             <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between">
+              {/* upper bar containing the name of the receiver */}
               <div className="w-full h-[10%] flex flex-row bg-slate-500 rounded-tr-2xl">
                 <div className="w-[10%] flex justify-center items-center">
                   <div className="p-3 bg-slate-400 rounded-xl">
@@ -371,6 +372,25 @@ const TextingSection = ({ token }: { token: string }) => {
                   </div>
                 </div>
               </div>
+              {/* space for texts to appear */}
+              <div
+                className="w-full h-[80%] flex-col-reverse overflow-y-auto p-4 bg-slate-400"
+                id="message-container"
+              >
+                <div className="flex justify-end">
+                  <div className="p-3 bg-green-500 rounded-lg max-w-[70%]">
+                    <p className="text-white">Hello! This is a sent message.</p>
+                  </div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="p-3 bg-blue-500 rounded-lg max-w-[70%]">
+                    <p className="text-white">
+                      Hi! This is a received message.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* lower bar containing the text input for sending the texts */}
               <div className="w-full bg-slate-500 flex flex-row h-[3.5rem]">
                 <div className="w-[5%] flex justify-center items-center">
                   <GoPaperclip className="text-[1.5rem]" />

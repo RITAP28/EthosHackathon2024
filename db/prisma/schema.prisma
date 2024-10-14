@@ -33,15 +33,15 @@ model Session {
 }
 
 model Chat {
-  chatId       Int      @id @default(autoincrement())
-  senderId     Int      @unique
-  receiverId   Int      @unique
-  textMetadata String
-  sentAt       DateTime @default(now())
-  receivedAt   DateTime
-  isDelivered  Boolean  @default(false)
-  isRead       Boolean  @default(false)
-  user         User     @relation(references: [id], fields: [senderId], onDelete: Cascade)
+  chatId        Int      @id @default(autoincrement())
+  senderEmail   String   @unique
+  receiverEmail String   @unique
+  textMetadata  String
+  sentAt        DateTime @default(now())
+  receivedAt    DateTime?
+  isDelivered   Boolean  @default(false)
+  isRead        Boolean  @default(false)
+  user          User     @relation(references: [email], fields: [senderEmail], onDelete: Cascade)
 }
 
 model ChatPartners {

@@ -5,6 +5,11 @@ import jwt from "jsonwebtoken";
 import cors from "cors";
 import { ExtendedDecodedToken, ExtendedWebsocket } from "./utils/utils";
 import connectToDatabase from "./config/db.connection";
+import { prisma } from "../../../db/db";
+import {
+  addChatsToDatabase,
+  getUndeliveredMessages,
+} from "./controller/chat.controller";
 
 dotenv.config();
 
@@ -157,11 +162,28 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
               to: chatPartner,
             })
           );
+          const chatId = await addChatsToDatabase(
+            ws.user.email,
+            chatPartner,
+            parsedMessage.message
+          );
+          if (SocketChatPartner.OPEN) {
+            await prisma.chat.update({
+              where: {
+                chatId: chatId,
+              },
+              data: {
+                receivedAt: new Date(Date.now()),
+                isDelivered: true,
+              },
+            });
+          }
           ws.send(
             JSON.stringify({
               message: `Message sent to ${chatPartner} successfully`,
             })
           );
+
           console.log(`Message sent to chat partner ${chatPartner}`);
           return;
         } else {
@@ -185,6 +207,33 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
         );
         console.log(`Received message from ${senderEmail}`);
       }
+
+      // for getting all the messages sent by others to this user while the socket connection was not established
+      const undeliveredMessages = await getUndeliveredMessages(ws.user.email);
+
+      if(undeliveredMessages && undeliveredMessages.length > 0){
+        for(const message of undeliveredMessages){
+          ws.send(
+            JSON.stringify({
+              action: 'receive-message',
+              textMetadata: message.textMetadata,
+              from: message.senderEmail,
+              to: message.receiverEmail
+            })
+          );
+
+          await prisma.chat.update({
+            where: {
+              chatId: message.chatId
+            },
+            data: {
+              receivedAt: new Date(Date.now()),
+              isDelivered: true
+            }
+          })
+        };
+      };
+      
     } catch (error) {
       console.error("Websocker error: ", error);
       ws.send(

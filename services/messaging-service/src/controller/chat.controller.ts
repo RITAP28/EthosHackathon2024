@@ -28,5 +28,51 @@ export async function findUserSocket(email: string) {
     });
   } catch (error) {
     console.error("Error while finding receiver socket: ", error);
-  };
-};
+  }
+}
+
+export async function addChatsToDatabase(
+  senderEmail: string,
+  receiverEmail: string,
+  textMetadata: string
+) {
+  try {
+    const chatAdditionResponse = await prisma.chat.create({
+      data: {
+        senderEmail: senderEmail,
+        receiverEmail: receiverEmail,
+        textMetadata: textMetadata,
+        sentAt: new Date(Date.now()),
+        receivedAt: null,
+        isDelivered: false,
+        isRead: false,
+      },
+    });
+    console.log("new chat added to database successfully");
+    return chatAdditionResponse.chatId;
+  } catch (error) {
+    console.error("Error while adding chats to database: ", error);
+  }
+}
+
+export async function getUndeliveredMessages(receiverEmail: string) {
+  try {
+    // gives an array of messages
+    const undeliveredMessages = await prisma.chat.findMany({
+      where: {
+        receiverEmail: receiverEmail,
+        isDelivered: false,
+      },
+    });
+    console.log(
+      `Here are the undelivered messages for ${receiverEmail}: `,
+      undeliveredMessages
+    );
+    return undeliveredMessages;
+  } catch (error) {
+    console.error(
+      "Error while getting undelivered messages from database: ",
+      error
+    );
+  }
+}
