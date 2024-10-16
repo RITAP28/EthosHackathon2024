@@ -229,6 +229,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         ws.send(
           JSON.stringify({
             message: `Received message from ${senderEmail} successfully`,
+            textMetadata: parsedMessage.textMetadata,
+            from: parsedMessage.from,
+            to: parsedMessage.to
           })
         );
         console.log(`Received message from ${senderEmail}`);

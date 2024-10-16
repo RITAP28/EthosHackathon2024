@@ -13,12 +13,12 @@ export interface ChatPartner {
 };
 
 export interface ChatHistory {
-    chatId: number,
+    chatId?: number,
     senderEmail: string;
     receiverEmail: string;
     textMetadata: string;
     sentAt: Date;
-    receivedAt: Date;
-    isDelivered: boolean;
-    isRead: boolean;
+    receivedAt?: Date;
+    isDelivered?: boolean;
+    isRead?: boolean;
 }
