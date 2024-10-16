@@ -148,3 +148,36 @@ export async function getDetailsAboutChatPartner(req: Request, res: Response) {
     });
   }
 }
+
+export async function retrieveChats(req: Request, res: Response){
+  const { senderEmail, receiverEmail } = req.query;
+  try {
+    const chats = await prisma.chat.findMany({
+      where: {
+        OR: [
+          {
+            senderEmail: String(senderEmail),
+            receiverEmail: String(receiverEmail)
+          },{
+            senderEmail: String(receiverEmail),
+            receiverEmail: String(senderEmail)
+          }
+        ]
+      },
+      orderBy: {
+        sentAt: 'asc'
+      }
+    });
+    return res.status(200).json({
+      success: true,
+      message: `Chats between sender ${senderEmail} and receiver ${receiverEmail} are retrieved successfully`,
+      chats: chats
+    });
+  } catch (error) {
+    console.error(`Error while retrieving chats from database: `, error)
+    return res.status(500).json({
+      success: false,
+      msg: 'Internal Server Error'
+    });
+  };
+};

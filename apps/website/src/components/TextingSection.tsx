@@ -9,8 +9,8 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { ChangeEvent, useEffect, useState } from "react";
-import { ChatPartner, User } from "../lib/interface";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { ChatHistory, ChatPartner, User } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
@@ -40,6 +40,9 @@ const TextingSection = ({ token }: { token: string }) => {
   const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
 
   const [textMessage, setTextMessage] = useState<string>("");
+
+  const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
 
   const toast = useToast();
 
@@ -284,6 +287,32 @@ const TextingSection = ({ token }: { token: string }) => {
     }
   };
 
+  const handleRetrieveChatsBetweenClients = useCallback(async () => {
+    setLoadingChatHistory(true);
+    try {
+      const senderEmail = currentUser?.email as string;
+      const receiverEmail = currentChat;
+      const chats = await axios.get(
+        `http://localhost:8000/retrievechats?senderEmail=${senderEmail}&receiverEmail=${receiverEmail}`,
+        {
+          withCredentials: true,
+        }
+      );
+      console.log(
+        `Chats retrieved successfully between ${senderEmail} and ${receiverEmail}: `,
+        chats.data.chats
+      );
+      setChatHistory(chats.data.chats);
+    } catch (error) {
+      console.error(`Error while fetching chats between clients: `, error);
+    }
+    setLoadingChatHistory(false);
+  }, [currentUser, currentChat]);
+
+  useEffect(() => {
+    handleRetrieveChatsBetweenClients();
+  }, [handleRetrieveChatsBetweenClients]);
+
   return (
     <div className="w-full flex justify-start items-center h-[100%]">
       <div className="w-[99%] h-[97%] bg-slate-300 rounded-2xl">
@@ -377,18 +406,23 @@ const TextingSection = ({ token }: { token: string }) => {
                 className="w-full h-[80%] flex-col-reverse overflow-y-auto p-4 bg-slate-400"
                 id="message-container"
               >
-                <div className="flex justify-end">
-                  <div className="p-3 bg-green-500 rounded-lg max-w-[70%]">
-                    <p className="text-white">Hello! This is a sent message.</p>
-                  </div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="p-3 bg-blue-500 rounded-lg max-w-[70%]">
-                    <p className="text-white">
-                      Hi! This is a received message.
-                    </p>
-                  </div>
-                </div>
+                {loadingChatHistory
+                  ? "Loading your chats, please wait..."
+                  : chatHistory.map((chat, index) =>
+                      chat.senderEmail === currentUser?.email ? (
+                        <div className="flex justify-end pt-2" key={index}>
+                          <div className="p-3 bg-green-500 rounded-lg max-w-[70%]">
+                            <p className="text-white">{chat.textMetadata}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-start pt-2" key={index}>
+                          <div className="p-3 bg-blue-500 rounded-lg max-w-[70%]">
+                            <p className="text-white">{chat.textMetadata}</p>
+                          </div>
+                        </div>
+                      )
+                    )}
               </div>
               {/* lower bar containing the text input for sending the texts */}
               <div className="w-full bg-slate-500 flex flex-row h-[3.5rem]">

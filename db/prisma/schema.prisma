@@ -21,7 +21,6 @@ model User {
   role            Role      @default(USER)
   createdAt       DateTime  @default(now())
   Session         Session[]
-  Chat            Chat?
 }
 
 model Session {
@@ -33,15 +32,14 @@ model Session {
 }
 
 model Chat {
-  chatId        Int      @id @default(autoincrement())
-  senderEmail   String   @unique
-  receiverEmail String   @unique
+  chatId        Int       @id @default(autoincrement())
+  senderEmail   String
+  receiverEmail String
   textMetadata  String
-  sentAt        DateTime @default(now())
+  sentAt        DateTime  @default(now())
   receivedAt    DateTime?
-  isDelivered   Boolean  @default(false)
-  isRead        Boolean  @default(false)
-  user          User     @relation(references: [email], fields: [senderEmail], onDelete: Cascade)
+  isDelivered   Boolean   @default(false)
+  isRead        Boolean   @default(false)
 }
 
 model ChatPartners {

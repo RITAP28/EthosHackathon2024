@@ -11,3 +11,14 @@ export interface ChatPartner {
     chatPartnerEmail: string;
     startedAt: Date;
 };
+
+export interface ChatHistory {
+    chatId: number,
+    senderEmail: string;
+    receiverEmail: string;
+    textMetadata: string;
+    sentAt: Date;
+    receivedAt: Date;
+    isDelivered: boolean;
+    isRead: boolean;
+}

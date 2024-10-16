@@ -36,7 +36,7 @@ export const wss = new WebSocketServer({
   server: httpServer,
 });
 
-wss.on("connection", function connection(ws: ExtendedWebsocket) {
+wss.on("connection", async function connection(ws: ExtendedWebsocket) {
   ws.on("error", (error) => console.error(error));
 
   ws.on("message", async (message: string) => {
@@ -93,6 +93,32 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
           );
           ws.close();
           return;
+        }
+      }
+
+      // for getting all the messages sent by others to this user while the socket connection was not established
+      const undeliveredMessages = await getUndeliveredMessages(ws.user.email);
+
+      if (undeliveredMessages && undeliveredMessages.length > 0) {
+        for (const message of undeliveredMessages) {
+          ws.send(
+            JSON.stringify({
+              action: "receive-message",
+              textMetadata: message.textMetadata,
+              from: message.senderEmail,
+              to: message.receiverEmail,
+            })
+          );
+
+          await prisma.chat.update({
+            where: {
+              chatId: message.chatId,
+            },
+            data: {
+              receivedAt: new Date(Date.now()),
+              isDelivered: true,
+            },
+          });
         }
       }
 
@@ -207,33 +233,6 @@ wss.on("connection", function connection(ws: ExtendedWebsocket) {
         );
         console.log(`Received message from ${senderEmail}`);
       }
-
-      // for getting all the messages sent by others to this user while the socket connection was not established
-      const undeliveredMessages = await getUndeliveredMessages(ws.user.email);
-
-      if(undeliveredMessages && undeliveredMessages.length > 0){
-        for(const message of undeliveredMessages){
-          ws.send(
-            JSON.stringify({
-              action: 'receive-message',
-              textMetadata: message.textMetadata,
-              from: message.senderEmail,
-              to: message.receiverEmail
-            })
-          );
-
-          await prisma.chat.update({
-            where: {
-              chatId: message.chatId
-            },
-            data: {
-              receivedAt: new Date(Date.now()),
-              isDelivered: true
-            }
-          })
-        };
-      };
-      
     } catch (error) {
       console.error("Websocker error: ", error);
       ws.send(
