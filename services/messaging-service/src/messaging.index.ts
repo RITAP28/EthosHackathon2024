@@ -186,6 +186,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               textMetadata: parsedMessage.message,
               from: ws.user.email,
               to: chatPartner,
+              sentAt: new Date(Date.now())
             })
           );
           const chatId = await addChatsToDatabase(
@@ -226,12 +227,15 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         }
       } else if (parsedMessage.action === "receive-message") {
         const senderEmail = parsedMessage.from as string;
+        console.log('receive-message sender email: ', senderEmail);
         ws.send(
           JSON.stringify({
             message: `Received message from ${senderEmail} successfully`,
             textMetadata: parsedMessage.textMetadata,
             from: parsedMessage.from,
-            to: parsedMessage.to
+            to: parsedMessage.to,
+            sentAt: parsedMessage.sentAt,
+            receivedAt: new Date(Date.now())
           })
         );
         console.log(`Received message from ${senderEmail}`);

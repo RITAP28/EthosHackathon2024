@@ -227,37 +227,13 @@ const TextingSection = ({ token }: { token: string }) => {
             senderEmail: currentUser?.email as string,
             receiverEmail: receiverEmail,
             textMetadata: textMessage,
-            sentAt: new Date(Date.now())
-          }
-        ])
+            sentAt: new Date(Date.now()),
+          },
+        ]);
 
         ws.onmessage = (message) => {
           const data = JSON.parse(message.data);
           console.log("Received message from the server: ", data);
-          if (
-            data.message === `Message sent to ${receiverEmail} successfully`
-          ) {
-            toast({
-              title: `Message sent successfully to ${receiverEmail}`,
-              status: "success",
-              duration: 4000,
-              isClosable: true,
-              position: "top-right",
-            });
-          } else if (
-            data.message ===
-            `Chat Partner not matching with the one in the socket`
-          ) {
-            toast({
-              title: `Chat Partner Email mismatch happened`,
-              status: "error",
-              duration: 4000,
-              isClosable: true,
-              position: "top-right",
-            });
-            console.log("Chat Partner Email mismatch happened");
-            return;
-          }
         };
 
         ws.onclose = () => {
@@ -288,41 +264,62 @@ const TextingSection = ({ token }: { token: string }) => {
   };
 
   useEffect(() => {
-    if(ws && ws.OPEN){
+    if (ws && ws.OPEN) {
       ws.onmessage = (message) => {
         const data = JSON.parse(message.data);
         console.log(`Received message from the server: `, data);
 
-        if (
-          data.message ===
-          `Received message from ${data.from} successfully`
-        ) {
+        if (data.action === `receive-message`) {
+          console.log(`message from ${currentChat}: `, data.textMetadata);
           setChatHistory((prevChats) => [
             ...prevChats,
             {
               textMetadata: data.textMetadata,
               senderEmail: data.from,
               receiverEmail: data.to,
-              sentAt: new Date(Date.now()),
-            }
+              sentAt: data.sentAt,
+            },
           ]);
           toast({
-            title: `Received message from ${data.form} successfully`,
+            title: `Received message from ${currentChat} successfully`,
             status: "success",
             duration: 4000,
             isClosable: true,
             position: "top-right",
           });
+        } else if (
+          data.message === `Message sent to ${currentChat} successfully`
+        ) {
+          toast({
+            title: `Message sent successfully to ${currentChat}`,
+            status: "success",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right",
+          });
+        } else if (
+          data.message ===
+          `Chat Partner not matching with the one in the socket`
+        ) {
+          toast({
+            title: `Chat Partner Email mismatch happened`,
+            status: "error",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right",
+          });
+          console.log("Chat Partner Email mismatch happened");
+          return;
         }
-      }
-    };
+      };
+    }
 
     return () => {
       if (ws) {
         ws.onmessage = null;
       }
     };
-  }, [ws, toast]);
+  }, [ws, toast, currentChat]);
 
   const handleRetrieveChatsBetweenClients = useCallback(async () => {
     setLoadingChatHistory(true);
@@ -346,7 +343,7 @@ const TextingSection = ({ token }: { token: string }) => {
         duration: 4000,
         isClosable: true,
         position: "top-right",
-      })
+      });
     } catch (error) {
       console.error(`Error while fetching chats between clients: `, error);
     }

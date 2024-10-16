@@ -123,7 +123,7 @@ const ClientDashboard = () => {
   }, [currentUser, ws, toast, navigate, token]);
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex flex-row relative w-full">
+    <div className="max-h-screen bg-neutral-900 flex flex-row relative w-full">
       {ws ? (
         <>
           <div className="w-[6%] min-h-screen flex flex-col items-center justify-center bg-transparent z-20 px-1 font-Philosopher">
