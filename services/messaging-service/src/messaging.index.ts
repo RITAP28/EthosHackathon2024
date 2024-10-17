@@ -141,7 +141,14 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           return extendedClient?.user?.email === targetEmail;
         }) as ExtendedWebsocket | undefined;
 
-        console.log("target user socket email: ", targetUserSocket?.user.email);
+        if (targetUserSocket === undefined) {
+          console.log(`Sorry, ${targetEmail} is offline`);
+        } else {
+          console.log(
+            "target user socket email: ",
+            targetUserSocket?.user.email
+          );
+        }
 
         if (targetUserSocket) {
           ws.chatPartner = targetUserSocket;
@@ -163,13 +170,18 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             })
           );
         } else {
-          console.log(`Target user ${targetEmail} not found`);
+          // console.log(`Target user ${targetEmail} not found`);
+          // ws.send(
+          //   JSON.stringify({
+          //     message: "User not connected",
+          //   })
+          // );
+          // return;
           ws.send(
             JSON.stringify({
-              message: "User not connected",
+              message: `${targetEmail} is offline, but you can still send messages`,
             })
           );
-          return;
         }
       }
 
@@ -178,7 +190,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         const chatPartner = parsedMessage.targetEmail as string;
         const SocketChatPartner = ws.chatPartner;
         console.log("chat partner email: ", chatPartner);
-        if (chatPartner === SocketChatPartner.user.email) {
+        if (SocketChatPartner && chatPartner === SocketChatPartner.user.email) {
           // sending the data to the client attached to the SocketChatPartner
           SocketChatPartner.send(
             JSON.stringify({
@@ -186,7 +198,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               textMetadata: parsedMessage.message,
               from: ws.user.email,
               to: chatPartner,
-              sentAt: new Date(Date.now())
+              sentAt: new Date(Date.now()),
             })
           );
           const chatId = await addChatsToDatabase(
@@ -211,25 +223,25 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               where: {
                 senderEmail_chatPartnerEmail: {
                   senderEmail: ws.user.email,
-                  chatPartnerEmail: chatPartner
-                }
+                  chatPartnerEmail: chatPartner,
+                },
               },
               data: {
                 latestChat: parsedMessage.message,
-                updatedAt: new Date(Date.now())
-              }
+                updatedAt: new Date(Date.now()),
+              },
             });
             await prisma.chatPartners.update({
               where: {
                 senderEmail_chatPartnerEmail: {
                   senderEmail: chatPartner,
-                  chatPartnerEmail: ws.user.email
-                }
+                  chatPartnerEmail: ws.user.email,
+                },
               },
               data: {
                 latestChat: parsedMessage.message,
-                updatedAt: new Date(Date.now())
-              }
+                updatedAt: new Date(Date.now()),
+              },
             });
           }
           ws.send(
@@ -240,6 +252,45 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
 
           console.log(`Message sent to chat partner ${chatPartner}`);
           return;
+        } else if (SocketChatPartner === undefined) {
+          const chatId = await addChatsToDatabase(
+            ws.user.email,
+            chatPartner,
+            parsedMessage.message
+          );
+          await prisma.chat.update({
+            where: {
+              chatId: chatId,
+            },
+            data: {
+              receivedAt: null,
+              isDelivered: false,
+            },
+          });
+          await prisma.chatPartners.update({
+            where: {
+              senderEmail_chatPartnerEmail: {
+                senderEmail: ws.user.email,
+                chatPartnerEmail: chatPartner,
+              },
+            },
+            data: {
+              latestChat: parsedMessage.message,
+              updatedAt: new Date(Date.now()),
+            },
+          });
+          await prisma.chatPartners.update({
+            where: {
+              senderEmail_chatPartnerEmail: {
+                senderEmail: chatPartner,
+                chatPartnerEmail: ws.user.email,
+              },
+            },
+            data: {
+              latestChat: parsedMessage.message,
+              updatedAt: new Date(Date.now()),
+            },
+          });
         } else {
           console.log(
             `Chat Partner ${chatPartner} not matching with the one in the socket`
@@ -254,7 +305,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         }
       } else if (parsedMessage.action === "receive-message") {
         const senderEmail = parsedMessage.from as string;
-        console.log('receive-message sender email: ', senderEmail);
+        console.log("receive-message sender email: ", senderEmail);
         ws.send(
           JSON.stringify({
             message: `Received message from ${senderEmail} successfully`,
@@ -262,7 +313,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             from: parsedMessage.from,
             to: parsedMessage.to,
             sentAt: parsedMessage.sentAt,
-            receivedAt: new Date(Date.now())
+            receivedAt: new Date(Date.now()),
           })
         );
         console.log(`Received message from ${senderEmail}`);

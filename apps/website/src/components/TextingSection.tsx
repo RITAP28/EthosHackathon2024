@@ -126,7 +126,21 @@ const TextingSection = ({ token }: { token: string }) => {
               isClosable: true,
             });
             onClose();
-          }
+          };
+          if(data.message === `${receiverEmail} is offline, but you can still send messages`){
+            console.log(`${receiverEmail} is offlin, but you can still send messages`);
+            getDetailsAboutChatPartner(receiverEmail);
+            setChatWindow(true);
+            setCurrentChat(receiverEmail);
+            fetchingChatPartnersFromDatabase(currentUser?.id as number);
+            toast({
+              title: `${receiverEmail} is offline, but you can still send messages`,
+              status: 'info',
+              duration: 4000,
+              isClosable: true,
+              position: 'top-right',
+            });
+          };
         };
 
         ws.onclose = () => {
@@ -435,7 +449,7 @@ const TextingSection = ({ token }: { token: string }) => {
                       <div className="w-[75%] flex flex-col">
                         <div className="w-full h-[40%] flex flex-row justify-between pr-3">
                           <div>{partner.chatPartnerName}</div>
-                          <div className="">{"20m"}</div>
+                          <div className="text-[0.7rem]">{handleDateFormat(partner.updatedAt)}</div>
                         </div>
                         <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
                           {partner.latestChat}
