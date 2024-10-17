@@ -46,15 +46,16 @@ export async function insertingChatPartnerintoDB(req: Request, res: Response) {
     senderId,
     chatPartnerId,
     senderName,
+    senderEmail,
     chatPartnerName,
     chatPartnerEmail,
   } = req.body;
   try {
     const existingChatPartner = await prisma.chatPartners.findUnique({
       where: {
-        senderId_chatPartnerId: {
-          senderId: Number(senderId),
-          chatPartnerId: Number(chatPartnerId),
+        senderEmail_chatPartnerEmail: {
+          senderEmail: String(senderEmail),
+          chatPartnerEmail: String(chatPartnerEmail)
         },
       },
     });
@@ -64,8 +65,10 @@ export async function insertingChatPartnerintoDB(req: Request, res: Response) {
           senderId: Number(senderId),
           chatPartnerId: Number(chatPartnerId),
           senderName: senderName as string,
+          senderEmail: senderEmail as string,
           chatPartnerName: chatPartnerName as string,
           chatPartnerEmail: chatPartnerEmail as string,
+          latestChat: null,
           startedAt: new Date(Date.now()),
         },
       });
@@ -99,7 +102,9 @@ export async function getChatPartnersFromDB(req: Request, res: Response) {
         chatPartnerId: true,
         chatPartnerName: true,
         chatPartnerEmail: true,
+        latestChat: true,
         startedAt: true,
+        updatedAt: true
       },
     });
     return res.status(200).json({
@@ -179,5 +184,30 @@ export async function retrieveChats(req: Request, res: Response){
       success: false,
       msg: 'Internal Server Error'
     });
+  };
+};
+
+export async function getLatestMessageBetweenUsers(senderEmail: string, receiverEmail: string){
+  try {
+    const allMessages = await prisma.chat.findMany({
+      where: {
+        OR: [
+          {
+            senderEmail: senderEmail,
+            receiverEmail: receiverEmail
+          },{
+            senderEmail: receiverEmail,
+            receiverEmail: senderEmail
+          }
+        ],
+      },
+      orderBy: {
+        sentAt: 'asc'
+      }
+    });
+    const reversedMessages = allMessages.reverse();
+    return reversedMessages[0].textMetadata;
+  } catch (error) {
+    console.error("Error while getting latest message: ", error);
   };
 };

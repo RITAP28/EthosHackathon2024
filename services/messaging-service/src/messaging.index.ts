@@ -195,6 +195,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             parsedMessage.message
           );
           if (SocketChatPartner.OPEN) {
+            // updating the chat model
             await prisma.chat.update({
               where: {
                 chatId: chatId,
@@ -203,6 +204,32 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 receivedAt: new Date(Date.now()),
                 isDelivered: true,
               },
+            });
+
+            // updating the latestChat in both the rows of the chatPartner model
+            await prisma.chatPartners.update({
+              where: {
+                senderEmail_chatPartnerEmail: {
+                  senderEmail: ws.user.email,
+                  chatPartnerEmail: chatPartner
+                }
+              },
+              data: {
+                latestChat: parsedMessage.message,
+                updatedAt: new Date(Date.now())
+              }
+            });
+            await prisma.chatPartners.update({
+              where: {
+                senderEmail_chatPartnerEmail: {
+                  senderEmail: chatPartner,
+                  chatPartnerEmail: ws.user.email
+                }
+              },
+              data: {
+                latestChat: parsedMessage.message,
+                updatedAt: new Date(Date.now())
+              }
             });
           }
           ws.send(

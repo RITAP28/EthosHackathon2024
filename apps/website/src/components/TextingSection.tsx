@@ -43,7 +43,6 @@ const TextingSection = ({ token }: { token: string }) => {
 
   const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
-  // const [chats, setChats] = useState<[]>([]);
 
   const toast = useToast();
 
@@ -70,6 +69,7 @@ const TextingSection = ({ token }: { token: string }) => {
     senderId: number,
     chatPartnerId: number,
     senderName: string,
+    senderEmail: string,
     chatPartnerName: string,
     chatPartnerEmail: string
   ) => {
@@ -80,6 +80,7 @@ const TextingSection = ({ token }: { token: string }) => {
           senderId,
           chatPartnerId,
           senderName,
+          senderEmail,
           chatPartnerName,
           chatPartnerEmail,
         },
@@ -231,11 +232,6 @@ const TextingSection = ({ token }: { token: string }) => {
           },
         ]);
 
-        ws.onmessage = (message) => {
-          const data = JSON.parse(message.data);
-          console.log("Received message from the server: ", data);
-        };
-
         ws.onclose = () => {
           console.log("Websocket connection closed");
           toast({
@@ -261,6 +257,54 @@ const TextingSection = ({ token }: { token: string }) => {
     } catch (error) {
       console.error("Error while sending message: ", error);
     }
+  };
+
+  const handleDateFormat = (sentAt: Date): string => {
+    const messageDate = new Date(sentAt);
+    const currentDate = new Date();
+
+    const differenceInTime = currentDate.getTime() - messageDate.getTime();
+    const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24));
+
+    const isToday = currentDate.toDateString() === messageDate.toDateString();
+    const isYesterday =
+      new Date(
+        currentDate.setDate(currentDate.getDate() - 1)
+      ).toDateString() === messageDate.toDateString();
+
+    // Format for "Today" (only show time)
+    if (isToday) {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      }).format(messageDate);
+    }
+
+    // Format for "Yesterday"
+    if (isYesterday) {
+      return `Yesterday, ${new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      }).format(messageDate)}`;
+    }
+
+    // Format for messages within the past 5 days
+    if (differenceInDays <= 5) {
+      return new Intl.DateTimeFormat("en-US", {
+        weekday: "long", // Day of the week (e.g., Thursday)
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      }).format(messageDate);
+    }
+
+    // Format for messages older than 5 days (MM/DD/YYYY, HH:MM AM/PM)
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(messageDate);
   };
 
   useEffect(() => {
@@ -393,8 +437,8 @@ const TextingSection = ({ token }: { token: string }) => {
                           <div>{partner.chatPartnerName}</div>
                           <div className="">{"20m"}</div>
                         </div>
-                        <div className="w-full h-[60%]">
-                          {partner.chatPartnerId}
+                        <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
+                          {partner.latestChat}
                         </div>
                       </div>
                     </div>
@@ -452,14 +496,24 @@ const TextingSection = ({ token }: { token: string }) => {
                   : chatHistory.map((chat, index) =>
                       chat.senderEmail === currentUser?.email ? (
                         <div className="flex justify-end pt-2" key={index}>
-                          <div className="p-3 bg-green-500 rounded-lg max-w-[70%]">
-                            <p className="text-white">{chat.textMetadata}</p>
+                          <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
+                            <div className="w-full">
+                              <p className="text-white">{chat.textMetadata}</p>
+                            </div>
+                            <div className="w-full flex justify-end text-[0.7rem]">
+                              {handleDateFormat(chat.sentAt)}
+                            </div>
                           </div>
                         </div>
                       ) : (
                         <div className="flex justify-start pt-2" key={index}>
-                          <div className="p-3 bg-blue-500 rounded-lg max-w-[70%]">
-                            <p className="text-white">{chat.textMetadata}</p>
+                          <div className="p-3 bg-blue-500 rounded-lg max-w-[70%] flex flex-col">
+                            <div className="w-full">
+                              <p className="text-white">{chat.textMetadata}</p>
+                            </div>
+                            <div className="w-full flex justify-end text-[0.7rem]">
+                              {handleDateFormat(chat.sentAt)}
+                            </div>
                           </div>
                         </div>
                       )
@@ -549,6 +603,7 @@ const TextingSection = ({ token }: { token: string }) => {
                               currentUser?.id as number,
                               user.id,
                               currentUser?.name as string,
+                              currentUser?.email as string,
                               user.name,
                               user.email
                             );

@@ -7,9 +7,12 @@ export interface User {
 export interface ChatPartner {
     id: number;
     chatPartnerId: number;
+    senderEmail: string;
     chatPartnerName: string;
     chatPartnerEmail: string;
     startedAt: Date;
+    latestChat: string;
+    updatedAt: Date;
 };
 
 export interface ChatHistory {

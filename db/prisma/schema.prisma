@@ -43,13 +43,16 @@ model Chat {
 }
 
 model ChatPartners {
-  id               Int      @id @unique @default(autoincrement())
+  id               Int       @id @unique @default(autoincrement())
   senderId         Int
   senderName       String
+  senderEmail      String
   chatPartnerId    Int
   chatPartnerName  String
   chatPartnerEmail String
-  startedAt        DateTime @default(now())
+  latestChat       String?
+  startedAt        DateTime  @default(now())
+  updatedAt        DateTime?
 
-  @@unique([senderId, chatPartnerId])
+  @@unique([senderEmail, chatPartnerEmail])
 }
