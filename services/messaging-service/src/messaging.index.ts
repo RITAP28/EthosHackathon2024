@@ -170,13 +170,6 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             })
           );
         } else {
-          // console.log(`Target user ${targetEmail} not found`);
-          // ws.send(
-          //   JSON.stringify({
-          //     message: "User not connected",
-          //   })
-          // );
-          // return;
           ws.send(
             JSON.stringify({
               message: `${targetEmail} is offline, but you can still send messages`,
@@ -184,6 +177,22 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           );
         }
       }
+
+      // handling the fetching of users from the database via websockets
+      if(parsedMessage.action === "fetch-chat-partners") {
+        const chatPartners = await prisma.chatPartners.findMany({
+          where: {
+            senderEmail: ws.user.email
+          }
+        });
+        ws.send(
+          JSON.stringify({
+            message: `All the chats have been fetched for ${ws.user.email} successfully`,
+            status: 'success',
+            chatPartners: chatPartners
+          })
+        );
+      };
 
       // handling messages between the client and the target user account
       if (parsedMessage.action === "send-message") {
@@ -291,6 +300,13 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               updatedAt: new Date(Date.now()),
             },
           });
+        } else if(SocketChatPartner.CLOSED){
+          console.log(`${chatPartner} has disconnected unfortunately`);
+          ws.send(
+            JSON.stringify({
+              message: `${chatPartner} has disconnected`
+            })
+          )
         } else {
           console.log(
             `Chat Partner ${chatPartner} not matching with the one in the socket`

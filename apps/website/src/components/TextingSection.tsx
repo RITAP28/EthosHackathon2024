@@ -37,12 +37,15 @@ const TextingSection = ({ token }: { token: string }) => {
 
   // states for chat partners
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
+  const [chatPartnersViaSocket, setChatPartnerViaSocket] = useState<ChatPartner[]>([]);
   const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
 
   const [textMessage, setTextMessage] = useState<string>("");
 
   const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+
+  const [lastChat, setLastChat] = useState<string>("");
 
   const toast = useToast();
 
@@ -126,21 +129,26 @@ const TextingSection = ({ token }: { token: string }) => {
               isClosable: true,
             });
             onClose();
-          };
-          if(data.message === `${receiverEmail} is offline, but you can still send messages`){
-            console.log(`${receiverEmail} is offlin, but you can still send messages`);
+          }
+          if (
+            data.message ===
+            `${receiverEmail} is offline, but you can still send messages`
+          ) {
+            console.log(
+              `${receiverEmail} is offlin, but you can still send messages`
+            );
             getDetailsAboutChatPartner(receiverEmail);
             setChatWindow(true);
             setCurrentChat(receiverEmail);
             fetchingChatPartnersFromDatabase(currentUser?.id as number);
             toast({
               title: `${receiverEmail} is offline, but you can still send messages`,
-              status: 'info',
+              status: "info",
               duration: 4000,
               isClosable: true,
-              position: 'top-right',
+              position: "top-right",
             });
-          };
+          }
         };
 
         ws.onclose = () => {
@@ -190,6 +198,7 @@ const TextingSection = ({ token }: { token: string }) => {
       );
       console.log("Here are your chat partners: ", chatPartners.data);
       setChatPartners(chatPartners.data.chatPartners);
+      // setLastChat(chatPartners.data.latestChat);
     } catch (error) {
       console.error(
         "Error while fetching chat partners from database: ",
@@ -323,6 +332,16 @@ const TextingSection = ({ token }: { token: string }) => {
 
   useEffect(() => {
     if (ws && ws.OPEN) {
+      // fetching users from the database from the database via websockets
+      ws.onopen = () => {
+        console.log('websocket connection opened successfully.');
+        ws.send(
+          JSON.stringify({
+            action: 'fetch-chat-partners',
+          })
+        );
+      }
+
       ws.onmessage = (message) => {
         const data = JSON.parse(message.data);
         console.log(`Received message from the server: `, data);
@@ -338,6 +357,7 @@ const TextingSection = ({ token }: { token: string }) => {
               sentAt: data.sentAt,
             },
           ]);
+          setLastChat(data.textMetadata);
           toast({
             title: `Received message from ${currentChat} successfully`,
             status: "success",
@@ -348,6 +368,7 @@ const TextingSection = ({ token }: { token: string }) => {
         } else if (
           data.message === `Message sent to ${currentChat} successfully`
         ) {
+          setLastChat(data.textMetadata);
           toast({
             title: `Message sent successfully to ${currentChat}`,
             status: "success",
@@ -368,6 +389,15 @@ const TextingSection = ({ token }: { token: string }) => {
           });
           console.log("Chat Partner Email mismatch happened");
           return;
+        } else if (data.message === `All the chats have been fetched for ${currentUser?.email} successfully`) {
+          setChatPartnerViaSocket(data.chatPartners);
+          toast({
+            title: `All the chats have been fetched for ${currentUser?.email} successfully`,
+            status: "success",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right",
+          });
         }
       };
     }
@@ -377,7 +407,7 @@ const TextingSection = ({ token }: { token: string }) => {
         ws.onmessage = null;
       }
     };
-  }, [ws, toast, currentChat]);
+  }, [ws, toast, currentChat, currentUser?.email]);
 
   const handleRetrieveChatsBetweenClients = useCallback(async () => {
     setLoadingChatHistory(true);
@@ -433,7 +463,9 @@ const TextingSection = ({ token }: { token: string }) => {
               {loadingPartners
                 ? "Loading your partners..."
                 : chatPartners.length > 0
-                ? chatPartners.map((partner, index) => (
+                ? chatPartners.map((partner, index) => {
+                  // setLastChat(partner.latestChat);
+                  return (
                     <div
                       className="w-[90%] bg-slate-400 flex flex-row py-2 rounded-xl hover:bg-slate-500 hover:cursor-pointer transition ease-in-out duration-200"
                       key={index}
@@ -449,14 +481,17 @@ const TextingSection = ({ token }: { token: string }) => {
                       <div className="w-[75%] flex flex-col">
                         <div className="w-full h-[40%] flex flex-row justify-between pr-3">
                           <div>{partner.chatPartnerName}</div>
-                          <div className="text-[0.7rem]">{handleDateFormat(partner.updatedAt)}</div>
+                          <div className="text-[0.7rem]">
+                            {handleDateFormat(partner.updatedAt)}
+                          </div>
                         </div>
                         <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
                           {partner.latestChat}
                         </div>
                       </div>
                     </div>
-                  ))
+                  )
+                })
                 : "Users you chat with will appear here."}
             </div>
           </div>
