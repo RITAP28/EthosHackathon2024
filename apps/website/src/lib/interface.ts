@@ -1,7 +1,8 @@
 export interface User {
-    id: number;
+    id?: number;
     name: string;
     email: string;
+    password: string
 }
 
 export interface ChatPartner {
