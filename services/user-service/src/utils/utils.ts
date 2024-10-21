@@ -1,4 +1,5 @@
 import { z } from "zod";
+import jwt from 'jsonwebtoken';
 
 export interface Register {
   name: string;
@@ -34,3 +35,15 @@ export const UserLoginSchema = z.object({
     email: z.string().email("Invalid Email"),
     password: z.string()
 });
+
+export const generateJWT = (userId: number, secret: string, expirationTime: number) => {
+  return jwt.sign(
+    {
+      userId: userId
+    },
+    secret,
+    {
+      expiresIn: expirationTime
+    }
+  );
+};

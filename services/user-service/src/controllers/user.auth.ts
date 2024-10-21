@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import {
   Login,
   Register,
@@ -6,65 +6,13 @@ import {
   UserRegisterSchema,
 } from "../utils/utils";
 import bcrypt from "bcrypt";
-import {
-  sendTokenAfterLogin,
-  sendTokenAfterRegistration,
-} from "../utils/send.token";
 import { prisma } from "../../../../db/db";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { generateAuthTokens } from "../utils/generate.token";
+
 
 dotenv.config();
-
-const generateAccessToken = (
-  userId: number,
-  userEmail: string,
-  userName: string
-) => {
-  const accessToken = jwt.sign(
-    {
-      id: userId,
-      email: userEmail,
-      name: userName,
-    },
-    process.env.ACCESS_TOKEN_SECRET_KEY as string,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
-  );
-  return accessToken;
-};
-
-const generateRefreshToken = (
-  userId: number,
-  userEmail: string,
-  userName: string
-) => {
-  const refreshToken = jwt.sign(
-    {
-      id: userId,
-      email: userEmail,
-      name: userName,
-    },
-    process.env.REFRESH_TOKEN_SECRET as string,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
-  );
-  return refreshToken;
-};
-
-const generateAccessAndRefreshToken = async (userId: number) => {
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-  });
-  if (!user) {
-    throw new Error(`User with userId ${userId} not found`);
-  }
-
-  const accessToken = generateAccessToken(user.id, user.email, user.name);
-  const refreshToken = generateRefreshToken(user.id, user.email, user.name);
-
-  return { accessToken, refreshToken };
-};
 
 export const UserRegisterFunction = async (req: Request, res: Response) => {
   const { name, email, password }: Register = req.body;
@@ -111,8 +59,8 @@ export const UserRegisterFunction = async (req: Request, res: Response) => {
       },
     });
 
-    console.log("New User created and saved in the database");
-    return await sendTokenAfterRegistration(newUser, 200, res);
+    console.log("New User created and saved in the database, now generating token...");
+    await generateAuthTokens(newUser, 200, res);
   } catch (error) {
     console.error("Validation failed: ", error);
     return res.status(500).json({
@@ -171,7 +119,8 @@ export const UserLoginFunction = async (req: Request, res: Response) => {
       },
     });
 
-    return await sendTokenAfterLogin(existingUser, 200, res);
+    console.log("Existing user is present, now generating token...");
+    await generateAuthTokens(existingUser, 200, res);
   } catch (error) {
     console.error("Login failed: ", error);
     return res.status(500).json({
@@ -270,7 +219,7 @@ export const readToken = async (req: Request, res: Response) => {
         userId: userId,
       },
     });
-    const token = session?.token as string;
+    const token = session?.refreshToken as string;
     console.log("The token is: ", token);
     const decodedToken = jwt.verify(
       token,

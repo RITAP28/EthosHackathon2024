@@ -13,22 +13,23 @@ enum Role {
 }
 
 model User {
-  id                 Int       @id @unique @default(autoincrement())
-  name               String
-  email              String    @unique
-  password           String
-  isAuthenticated    Boolean   @default(false)
-  role               Role      @default(USER)
-  createdAt          DateTime  @default(now())
-  Session            Session[]
+  id              Int       @id @unique @default(autoincrement())
+  name            String
+  email           String    @unique
+  password        String
+  isAuthenticated Boolean   @default(false)
+  role            Role      @default(USER)
+  createdAt       DateTime  @default(now())
+  Session         Session[]
 }
 
 model Session {
-  sessionId Int      @id @default(autoincrement())
-  userId    Int      @unique
-  token     String   @unique
-  expiresAt DateTime
-  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+  sessionId             Int      @id @default(autoincrement())
+  userId                Int      @unique
+  refreshToken          String   @unique
+  refreshTokenExpiresAt Int
+  createdAt             DateTime @default(now())
+  user                  User     @relation(references: [id], fields: [userId], onDelete: Cascade)
 }
 
 model Chat {

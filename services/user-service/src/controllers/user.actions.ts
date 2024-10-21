@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../../../db/db";
 import { IdentityKeyPair, PreKeyBundle, PreKeyRecord, SignedPreKeyRecord } from "@signalapp/libsignal-client";
 
-export const getUsersFromDB = async (req: Request, res: Response) => {
+export async function getUsersFromDB(req: Request, res: Response) {
   const userId = Number(req.query.id);
   if (isNaN(userId)) {
     return res.status(400).json({
