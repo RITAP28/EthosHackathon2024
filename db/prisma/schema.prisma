@@ -27,7 +27,7 @@ model Session {
   sessionId             Int      @id @default(autoincrement())
   userId                Int      @unique
   refreshToken          String   @unique
-  refreshTokenExpiresAt Int
+  refreshTokenExpiresAt BigInt
   createdAt             DateTime @default(now())
   user                  User     @relation(references: [id], fields: [userId], onDelete: Cascade)
 }

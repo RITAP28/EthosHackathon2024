@@ -5,4 +5,5 @@ export interface UserReducerInitialState {
   error: string | null;
   loading: boolean;
   isAuthenticated: boolean;
+  accessToken: string | null
 }

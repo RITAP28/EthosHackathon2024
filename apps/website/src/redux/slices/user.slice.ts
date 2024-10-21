@@ -6,6 +6,7 @@ const initialState: UserReducerInitialState = {
   error: null,
   loading: false,
   isAuthenticated: false,
+  accessToken: null
 };
 
 export const userSlice = createSlice({
@@ -13,16 +14,18 @@ export const userSlice = createSlice({
   initialState,
   reducers: {
     RegistrationSuccess: (state, action) => {
-      state.currentUser = action.payload;
+      state.currentUser = action.payload.user;
       state.error = null;
       state.loading = false;
       state.isAuthenticated = true;
+      state.accessToken = action.payload.accessToken
     },
     RegistrationFailure: (state, action) => {
       state.currentUser = null;
       state.error = action.payload;
       state.loading = false;
       state.isAuthenticated = false;
+      state.accessToken = null;
     },
     LoginSuccess: (state, action) => {
       state.currentUser = action.payload;

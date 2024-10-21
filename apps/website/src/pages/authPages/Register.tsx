@@ -51,9 +51,13 @@ const Register = () => {
         return;
       } else {
         console.log('zod validated form: ', zodValidatedFormData);
-        const registerResponse = await axios.post(`http://localhost:8000/register`, zodValidatedFormData.data);
-        console.log('Registration result: ', registerResponse.data.user);
-        dispatch(RegistrationSuccess(registerResponse.data.user));
+        const registerResponse = await axios.post(`http://localhost:8000/register`, zodValidatedFormData.data, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log('Registration result: ', registerResponse.data);
+        dispatch(RegistrationSuccess(registerResponse.data));
         navigate('/');
         toast({
           title: 'Registration successful',

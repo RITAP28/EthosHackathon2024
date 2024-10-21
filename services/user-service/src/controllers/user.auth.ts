@@ -191,7 +191,7 @@ export const UserLogoutFunction = async (req: Request, res: Response) => {
         userId: userId,
       },
     });
-    res.cookie("token", null, {
+    res.cookie("refreshToken", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
     });
