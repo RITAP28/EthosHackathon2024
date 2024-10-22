@@ -71,6 +71,7 @@ export const generateAuthTokens = async (
       });
     }
 
+    console.log("Token generated successfully");
     return res
       .status(statusCode)
       .cookie("refreshToken", refreshToken, {

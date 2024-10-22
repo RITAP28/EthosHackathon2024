@@ -12,6 +12,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
         // checking of both the refreshToken and accessToken
         const authHeader = req.headers['authorization'];
         const accessToken = authHeader && authHeader.split(' ')[1];
+        console.log('accessToken: ', accessToken);
 
         if(!accessToken){
             return res.status(401).json({
@@ -39,7 +40,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
                 msg: "Invalid Access Token. User unauthorised."
             });
         };
-        
+
         next();
     } catch (error) {
         console.log("Error while checking if the user is authenticated: ", error);

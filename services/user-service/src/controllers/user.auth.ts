@@ -1,5 +1,6 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import {
+  generateJWT,
   Login,
   Register,
   UserLoginSchema,
@@ -11,8 +12,12 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { generateAuthTokens } from "../utils/generate.token";
 
-
 dotenv.config();
+
+const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;
+const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET as string;
+const accessTokenExpiry =
+  Date.now() + Number(process.env.ACCESS_TOKEN_EXPIRY) * 15 * 60 * 1000;
 
 export const UserRegisterFunction = async (req: Request, res: Response) => {
   const { name, email, password }: Register = req.body;
@@ -59,7 +64,9 @@ export const UserRegisterFunction = async (req: Request, res: Response) => {
       },
     });
 
-    console.log("New User created and saved in the database, now generating token...");
+    console.log(
+      "New User created and saved in the database, now generating token..."
+    );
     await generateAuthTokens(newUser, 200, res);
   } catch (error) {
     console.error("Validation failed: ", error);
@@ -204,6 +211,81 @@ export const UserLogoutFunction = async (req: Request, res: Response) => {
   }
 };
 
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  const { refreshToken } = req.cookies;
+  const userId = Number(req.query.id);
+  if (!refreshToken) {
+    return res.status(204).json({
+      success: false,
+      msg: "No Refresh Token found",
+    });
+  }
+  try {
+    const refreshTokenFromDatabase = await prisma.session.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+    const decodedRefreshToken = jwt.verify(
+      refreshTokenFromDatabase?.refreshToken as string,
+      refreshTokenSecret
+    ) as { userId: number };
+
+    // invalid refresh token or expired
+    if (!decodedRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        msg: "Invalid Refresh Token",
+      });
+    }
+    // checking whether the user exists in the database
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          id: decodedRefreshToken.userId,
+        },
+      });
+
+      // user does not exist in the database
+      if (!user) {
+        res.cookie("refreshToken", null, {
+          expires: new Date(Date.now()),
+          httpOnly: true,
+        });
+        return res.status(404).json({
+          success: false,
+          msg: "User not found",
+        });
+      }
+
+      // user exists in the database, then access token is generated.
+      console.log("User Id matches. User is authenticated.");
+      const accessToken = generateJWT(
+        decodedRefreshToken.userId,
+        accessTokenSecret,
+        accessTokenExpiry
+      );
+      return res.status(200).json({
+        success: true,
+        accessToken: accessToken,
+        msg: "Access Token refreshed successfully.",
+      });
+    } catch (error) {
+      console.error("Error while checking whether the user exists: ", error);
+      return res.status(500).json({
+        success: false,
+        msg: "Internal Server Error",
+      });
+    }
+  } catch (error) {
+    console.error("Error while refreshing access token: ", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error",
+    });
+  }
+};
+
 export const readToken = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.query.id);
@@ -221,10 +303,7 @@ export const readToken = async (req: Request, res: Response) => {
     });
     const token = session?.refreshToken as string;
     console.log("The token is: ", token);
-    const decodedToken = jwt.verify(
-      token,
-      process.env.TOKEN_SECRET_KEY as string
-    );
+    const decodedToken = jwt.verify(token, refreshTokenSecret);
     return res.status(200).json({
       success: true,
       decodedToken,
