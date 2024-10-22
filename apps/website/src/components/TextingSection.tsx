@@ -24,7 +24,7 @@ import { IoSend } from "react-icons/io5";
 
 const TextingSection = ({ token }: { token: string }) => {
   console.log(token);
-  const { currentUser } = useAppSelector((state) => state.user);
+  const { currentUser, accessToken } = useAppSelector((state) => state.user);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -187,13 +187,17 @@ const TextingSection = ({ token }: { token: string }) => {
     setLoadingWindow(false);
   };
 
-  const fetchingChatPartnersFromDatabase = async (senderId: number) => {
+  const fetchingChatPartnersFromDatabase = useCallback(async (senderId: number) => {
     setLoadingPartners(true);
     try {
       const chatPartners = await axios.get(
         `http://localhost:8000/getchatpartnersfromdb?senderId=${senderId}`,
         {
           withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
         }
       );
       console.log("Here are your chat partners: ", chatPartners.data);
@@ -206,12 +210,12 @@ const TextingSection = ({ token }: { token: string }) => {
       );
     }
     setLoadingPartners(false);
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     // getting the chat partners from the database
     fetchingChatPartnersFromDatabase(currentUser?.id as number);
-  }, [currentUser]);
+  }, [currentUser, fetchingChatPartnersFromDatabase]);
 
   const getDetailsAboutChatPartner = async (receiverEmail: string) => {
     try {
@@ -222,6 +226,10 @@ const TextingSection = ({ token }: { token: string }) => {
             receiverEmail,
           },
           withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
         }
       );
       console.log(
@@ -418,6 +426,10 @@ const TextingSection = ({ token }: { token: string }) => {
         `http://localhost:8000/retrievechats?senderEmail=${senderEmail}&receiverEmail=${receiverEmail}`,
         {
           withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
         }
       );
       console.log(
@@ -436,7 +448,7 @@ const TextingSection = ({ token }: { token: string }) => {
       console.error(`Error while fetching chats between clients: `, error);
     }
     setLoadingChatHistory(false);
-  }, [currentUser, currentChat, toast]);
+  }, [currentUser, currentChat, toast, accessToken]);
 
   useEffect(() => {
     handleRetrieveChatsBetweenClients();

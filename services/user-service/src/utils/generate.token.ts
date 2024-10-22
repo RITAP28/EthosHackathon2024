@@ -20,6 +20,7 @@ export const generateAuthTokens = async (
   // generating a refresh token
   const refreshToken = generateJWT(
     user.id,
+    user.email,
     refreshTokenSecret,
     refreshTokenExpiry
   );
@@ -27,6 +28,7 @@ export const generateAuthTokens = async (
   // generating an access token
   const accessToken = generateJWT(
     user.id,
+    user.email,
     accessTokenSecret,
     accessTokenExpiry
   );

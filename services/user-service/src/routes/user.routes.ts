@@ -17,10 +17,10 @@ export default (router: express.Router) => {
     router.get('/getusersfromdb', isAuthenticated, getUsersFromDB);
 
     // routes for texting part
-    router.post('/insertchatpartner', insertingChatPartnerintoDB);
-    router.get('/getchatpartnersfromdb', getChatPartnersFromDB);
-    router.get('/getchatpartnerdetail', getDetailsAboutChatPartner);
-    router.get('/retrieveChats', retrieveChats);
+    router.post('/insertchatpartner', isAuthenticated, insertingChatPartnerintoDB);
+    router.get('/getchatpartnersfromdb', isAuthenticated, getChatPartnersFromDB);
+    router.get('/getchatpartnerdetail', isAuthenticated, getDetailsAboutChatPartner);
+    router.get('/retrieveChats', isAuthenticated, retrieveChats);
 
     // test routes for generating key pairs
     // router.post('/createidentitykeypairs', generateKeys);

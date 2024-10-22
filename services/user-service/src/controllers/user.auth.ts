@@ -229,7 +229,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     const decodedRefreshToken = jwt.verify(
       refreshTokenFromDatabase?.refreshToken as string,
       refreshTokenSecret
-    ) as { userId: number };
+    ) as { userId: number, email: string };
 
     // invalid refresh token or expired
     if (!decodedRefreshToken) {
@@ -259,16 +259,18 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       }
 
       // user exists in the database, then access token is generated.
-      console.log("User Id matches. User is authenticated.");
+      console.log("User Id matches, hence the user is authenticated.");
       const accessToken = generateJWT(
         decodedRefreshToken.userId,
+        decodedRefreshToken.email,
         accessTokenSecret,
         accessTokenExpiry
       );
+      console.log(`access token refreshed successfully for user with id ${userId}`);
       return res.status(200).json({
         success: true,
         accessToken: accessToken,
-        msg: "Access Token refreshed successfully.",
+        msg: `Access Token refreshed successfully, for user with id ${userId}`
       });
     } catch (error) {
       console.error("Error while checking whether the user exists: ", error);

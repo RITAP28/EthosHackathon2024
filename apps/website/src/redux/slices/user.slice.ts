@@ -28,23 +28,33 @@ export const userSlice = createSlice({
       state.accessToken = null;
     },
     LoginSuccess: (state, action) => {
-      state.currentUser = action.payload;
+      state.currentUser = action.payload.user;
       state.error = null;
       state.loading = false;
       state.isAuthenticated = true;
+      state.accessToken = action.payload.accessToken;
     },
     LoginFailure: (state, action) => {
       state.currentUser = null;
       state.error = action.payload;
       state.loading = false;
       state.isAuthenticated = false;
+      state.accessToken = null;
     },
     LogoutSuccess: (state) => {
       state.currentUser = null;
       state.error = null;
       state.loading = false;
       state.isAuthenticated = false;
+      state.accessToken = null;
     },
+    AccessTokenRefreshSuccess: (state, action) => {
+      state.accessToken = action.payload.accessToken;
+    },
+    AccessTokenRefreshFailure: (state) => {
+      state.accessToken = null;
+      state.error = null;
+    }
   },
 });
 
@@ -54,5 +64,7 @@ export const {
   LoginSuccess,
   LoginFailure,
   LogoutSuccess,
+  AccessTokenRefreshSuccess,
+  AccessTokenRefreshFailure
 } = userSlice.actions;
 export default userSlice.reducer;

@@ -10,39 +10,64 @@ import { useAppSelector } from "../../redux/hooks/hook";
 import TextingSection from "../../components/TextingSection";
 import { SlLogout } from "react-icons/sl";
 import { useWebSocket } from "../../hooks/UseWebsocket";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@chakra-ui/react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { LogoutSuccess } from "../../redux/slices/user.slice";
+import {
+  AccessTokenRefreshSuccess,
+  LogoutSuccess,
+} from "../../redux/slices/user.slice";
 
 const ClientDashboard = () => {
-  const { currentUser } = useAppSelector((state) => state.user);
+  const { currentUser, accessToken } = useAppSelector((state) => state.user);
   const [token, setToken] = useState<string>("");
   const ws = useWebSocket();
   const toast = useToast();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const getToken = async (userId: number) => {
-    try {
-      const getTokenResponse = await axios.get(
-        `http://localhost:8000/readtoken?id=${userId}`,
-        {
-          withCredentials: true,
+  const getToken = useCallback(
+    async (userId: number) => {
+      try {
+        const getTokenResponse = await axios.get(
+          `http://localhost:8000/readtoken?id=${userId}`,
+          {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log("token received is: ", getTokenResponse.data);
+        if (
+          getTokenResponse.status === 401 &&
+          getTokenResponse.data.success === false
+        ) {
+          console.log("access token has expired, making a new one...");
+          const refreshAccessToken = await axios.post(
+            `http://localhost:8000/refresh?id=${userId}`
+          );
+          console.log(
+            "access token refreshed response: ",
+            refreshAccessToken.data
+          );
+          dispatch(AccessTokenRefreshSuccess(refreshAccessToken.data.accessToken)); // sets the access token in redux or in memory
+          await getToken(currentUser?.id as number);
         }
-      );
-      console.log("token received is: ", getTokenResponse.data);
-      setToken(getTokenResponse.data.token);
-    } catch (error) {
-      console.error("Error while getting token: ", error);
-    }
-  };
+        setToken(getTokenResponse.data.token); // sets the refresh token
+      } catch (error) {
+        console.error("Error while getting token: ", error);
+      }
+    },
+    [accessToken, currentUser?.id, dispatch]
+  );
 
   useEffect(() => {
     getToken(currentUser?.id as number);
-  }, [currentUser]);
+  }, [currentUser, getToken]);
 
   // function for user logging out
   const handleLogOut = async () => {
@@ -78,16 +103,16 @@ const ClientDashboard = () => {
         ws.send(
           JSON.stringify({
             action: "first-socket-authentication",
-            token: token
+            token: accessToken,
           })
         );
       };
-      
+
       ws.onmessage = (message) => {
         console.log("Message received from server: ", message);
         const data = JSON.parse(message.data);
-        console.log('data received from the server: ', data);
-        if(data.message === "Authentication failed"){
+        console.log("data received from the server: ", data);
+        if (data.message === "Authentication failed") {
           console.log("Authentication failed");
           toast({
             title: `Authentication of your token failed in the websockets`,
@@ -95,15 +120,17 @@ const ClientDashboard = () => {
             duration: 4000,
             isClosable: true,
           });
-        } else if(data.message === `Welcome to the chat, ${currentUser.email}`) {
+        } else if (
+          data.message === `Welcome to the chat, ${currentUser.email}`
+        ) {
           console.log("Authentication of your token has been completed");
           toast({
             title: `${currentUser.name} has been authenticated`,
             status: "success",
             duration: 4000,
-            isClosable: true
+            isClosable: true,
           });
-        };
+        }
       };
 
       ws.onerror = () => {

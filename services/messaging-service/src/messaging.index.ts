@@ -13,6 +13,9 @@ import {
 
 dotenv.config();
 
+const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;
+const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET as string;
+
 const app = express();
 const port = process.env.PORT || 7071;
 app.use(
@@ -49,7 +52,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         const token = parsedMessage.token as string;
         let decoded;
         try {
-          decoded = jwt.verify(token, process.env.TOKEN_SECRET_KEY as string);
+          decoded = jwt.verify(token, accessTokenSecret);
           console.log("decoded: ", decoded);
           if (
             typeof decoded === "object" &&
