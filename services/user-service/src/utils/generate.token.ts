@@ -1,16 +1,12 @@
 import dotenv from "dotenv";
-import { generateJWT, User } from "./utils";
+import { accessTokenExpiry, accessTokenSecret, generateJWT, refreshTokenExpiry, refreshTokenSecret, User } from "./utils";
 import { prisma } from "../../../../db/db";
 import { Request, Response } from "express";
 
 dotenv.config();
 
-const refreshTokenSecret = String(process.env.REFRESH_TOKEN_SECRET);
-const accessTokenSecret = String(process.env.ACCESS_TOKEN_SECRET);
-const refreshTokenExpiry =
-  Date.now() + Number(process.env.REFRESH_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000;
-const accessTokenExpiry =
-  Date.now() + Number(process.env.ACCESS_TOKEN_EXPIRY) * 15 * 60 * 1000;
+const refreshExpiry = Date.now() + refreshTokenExpiry * 24 * 60 * 60 * 1000;
+const accessExpiry = Date.now() + accessTokenExpiry * 15 * 60 * 1000;
 
 export const generateAuthTokens = async (
   user: User,
@@ -22,7 +18,7 @@ export const generateAuthTokens = async (
     user.id,
     user.email,
     refreshTokenSecret,
-    refreshTokenExpiry
+    refreshExpiry
   );
 
   // generating an access token
@@ -30,7 +26,7 @@ export const generateAuthTokens = async (
     user.id,
     user.email,
     accessTokenSecret,
-    accessTokenExpiry
+    accessExpiry
   );
 
   try {
@@ -52,7 +48,7 @@ export const generateAuthTokens = async (
           data: {
             userId: existingUser?.id as number,
             refreshToken: refreshToken,
-            refreshTokenExpiresAt: refreshTokenExpiry
+            refreshTokenExpiresAt: refreshExpiry
           },
         });
       } else {
@@ -62,7 +58,7 @@ export const generateAuthTokens = async (
           },
           data: {
             refreshToken: refreshToken,
-            refreshTokenExpiresAt: refreshTokenExpiry,
+            refreshTokenExpiresAt: refreshExpiry,
           },
         });
       }
@@ -80,7 +76,7 @@ export const generateAuthTokens = async (
         httpOnly: true,
         secure: false,
         sameSite: true,
-        expires: new Date(refreshTokenExpiry),
+        expires: new Date(refreshExpiry),
       })
       .json({
         success: true,

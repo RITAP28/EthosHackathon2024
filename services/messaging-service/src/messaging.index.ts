@@ -3,7 +3,7 @@ import { WebSocketServer } from "ws";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import cors from "cors";
-import { ExtendedDecodedToken, ExtendedWebsocket } from "./utils/utils";
+import { accessTokenSecret, ExtendedDecodedToken, ExtendedWebsocket, PORT } from "./utils/utils";
 import connectToDatabase from "./config/db.connection";
 import { prisma } from "../../../db/db";
 import {
@@ -13,11 +13,8 @@ import {
 
 dotenv.config();
 
-const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;
-const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET as string;
-
 const app = express();
-const port = process.env.PORT || 7071;
+const port = PORT || 7071;
 app.use(
   cors({
     origin: [
@@ -182,20 +179,20 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
       }
 
       // handling the fetching of users from the database via websockets
-      if(parsedMessage.action === "fetch-chat-partners") {
+      if (parsedMessage.action === "fetch-chat-partners") {
         const chatPartners = await prisma.chatPartners.findMany({
           where: {
-            senderEmail: ws.user.email
-          }
+            senderEmail: ws.user.email,
+          },
         });
         ws.send(
           JSON.stringify({
             message: `All the chats have been fetched for ${ws.user.email} successfully`,
-            status: 'success',
-            chatPartners: chatPartners
+            status: "success",
+            chatPartners: chatPartners,
           })
         );
-      };
+      }
 
       // handling messages between the client and the target user account
       if (parsedMessage.action === "send-message") {
@@ -303,13 +300,13 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               updatedAt: new Date(Date.now()),
             },
           });
-        } else if(SocketChatPartner.CLOSED){
+        } else if (SocketChatPartner.CLOSED) {
           console.log(`${chatPartner} has disconnected unfortunately`);
           ws.send(
             JSON.stringify({
-              message: `${chatPartner} has disconnected`
+              message: `${chatPartner} has disconnected`,
             })
-          )
+          );
         } else {
           console.log(
             `Chat Partner ${chatPartner} not matching with the one in the socket`

@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import {
+  accessTokenExpiry,
+  accessTokenSecret,
   generateJWT,
   Login,
+  refreshTokenSecret,
   Register,
   UserLoginSchema,
   UserRegisterSchema,
@@ -9,15 +12,10 @@ import {
 import bcrypt from "bcrypt";
 import { prisma } from "../../../../db/db";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
 import { generateAuthTokens } from "../utils/generate.token";
 
-dotenv.config();
-
-const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;
-const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET as string;
-const accessTokenExpiry =
-  Date.now() + Number(process.env.ACCESS_TOKEN_EXPIRY) * 15 * 60 * 1000;
+const accessExpiry =
+  Date.now() + accessTokenExpiry * 15 * 60 * 1000;
 
 export const UserRegisterFunction = async (req: Request, res: Response) => {
   const { name, email, password }: Register = req.body;
@@ -264,7 +262,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
         decodedRefreshToken.userId,
         decodedRefreshToken.email,
         accessTokenSecret,
-        accessTokenExpiry
+        accessExpiry
       );
       console.log(`access token refreshed successfully for user with id ${userId}`);
       return res.status(200).json({

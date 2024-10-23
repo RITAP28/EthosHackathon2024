@@ -1,14 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import { connectToDatabase } from '../../../db/db';
 import router from './routes/routes';
-
-dotenv.config();
+import { Port } from './utils/utils';
 
 const app = express();
-const port = process.env.PORT || 7070;
+const port = Port || 7070;
 
 app.use(
     cors({

@@ -1,5 +1,8 @@
 import { z } from "zod";
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export interface Register {
   name: string;
@@ -48,3 +51,11 @@ export const generateJWT = (userId: number, email: string, secret: string, expir
     }
   );
 };
+
+export const Port = process.env.PORT;
+
+export const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET as string;
+export const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;
+
+export const accessTokenExpiry = Number(process.env.ACCESS_TOKEN_EXPIRY);
+export const refreshTokenExpiry = Number(process.env.REFRESH_TOKEN_EXPIRY);

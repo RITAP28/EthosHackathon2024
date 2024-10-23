@@ -1,11 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
 import { prisma } from "../../../../db/db";
-
-dotenv.config();
-
-const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET as string;
+import { accessTokenSecret } from "../utils/utils";
 
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
     try {

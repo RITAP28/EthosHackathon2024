@@ -147,7 +147,7 @@ const ClientDashboard = () => {
         });
       };
     }
-  }, [currentUser, ws, toast, navigate, token]);
+  }, [currentUser, ws, toast, navigate, token, accessToken]);
 
   return (
     <div className="max-h-screen bg-neutral-900 flex flex-row relative w-full">

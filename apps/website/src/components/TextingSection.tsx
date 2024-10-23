@@ -58,6 +58,10 @@ const TextingSection = ({ token }: { token: string }) => {
         `http://localhost:8000/getusersfromdb?id=${currentUser?.id}`,
         {
           withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          }
         }
       );
       console.log(getUsersResponse.data);
@@ -89,6 +93,10 @@ const TextingSection = ({ token }: { token: string }) => {
         },
         {
           withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          }
         }
       );
       console.log("Response: ", insertChatPartnerResponse);
