@@ -10,7 +10,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
         const accessToken = authHeader && authHeader.split(' ')[1];
         console.log('accessToken: ', accessToken);
 
-        if(!accessToken){
+        if(!accessToken || accessToken === undefined){
             return res.status(401).json({
                 success: false,
                 msg: 'No access token found'

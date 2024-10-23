@@ -479,7 +479,7 @@ const TextingSection = ({ token }: { token: string }) => {
                 }}
               />
             </div>
-            <div className="w-full flex justify-center pt-2">
+            <div className="w-full flex flex-col gap-2 justify-center items-center pt-2">
               {loadingPartners
                 ? "Loading your partners..."
                 : chatPartners.length > 0

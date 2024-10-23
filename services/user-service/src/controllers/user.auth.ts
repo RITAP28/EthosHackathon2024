@@ -115,15 +115,6 @@ export const UserLoginFunction = async (req: Request, res: Response) => {
       });
     }
 
-    await prisma.user.update({
-      where: {
-        email: loggedUser.email,
-      },
-      data: {
-        isAuthenticated: true,
-      },
-    });
-
     console.log("Existing user is present, now generating token...");
     await generateAuthTokens(existingUser, 200, res);
   } catch (error) {

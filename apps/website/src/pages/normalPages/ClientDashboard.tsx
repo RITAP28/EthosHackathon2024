@@ -43,7 +43,7 @@ const ClientDashboard = () => {
         );
         console.log("token received is: ", getTokenResponse.data);
         if (
-          getTokenResponse.status === 401 &&
+          getTokenResponse.status === 500 &&
           getTokenResponse.data.success === false
         ) {
           console.log("access token has expired, making a new one...");

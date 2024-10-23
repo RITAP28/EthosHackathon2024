@@ -15,7 +15,6 @@ const Home = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<User>({
-    name: "",
     email: "",
     password: ""
   });
@@ -46,7 +45,7 @@ const Home = () => {
         console.log('zod validated form: ', zodValidatedFormData.data);
         const loginResponse = await axios.post(`http://localhost:8000/login`, zodValidatedFormData.data);
         console.log('Login response: ', loginResponse.data);
-        dispatch(LoginSuccess(loginResponse.data.user));
+        dispatch(LoginSuccess(loginResponse.data));
         navigate('/');
         toast({
           title: 'Login Successful',
