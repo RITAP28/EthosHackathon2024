@@ -6,14 +6,14 @@ export interface User {
 }
 
 export interface ChatPartner {
-    id: number;
+    id?: number;
     chatPartnerId: number;
-    senderEmail: string;
+    senderEmail?: string;
     chatPartnerName: string;
     chatPartnerEmail: string;
     startedAt: Date;
     latestChat: string;
-    updatedAt: Date;
+    updatedAt?: Date;
 };
 
 export interface ChatHistory {
@@ -25,4 +25,10 @@ export interface ChatHistory {
     receivedAt?: Date;
     isDelivered?: boolean;
     isRead?: boolean;
+}
+
+export interface CurrentChat {
+    receiverId: number;
+    receiverName: string;
+    receiverEmail: string;
 }

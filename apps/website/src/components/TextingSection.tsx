@@ -10,7 +10,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import { ChatHistory, ChatPartner, User } from "../lib/interface";
+import { ChatHistory, ChatPartner, CurrentChat, User } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
@@ -30,14 +30,14 @@ const TextingSection = ({ token }: { token: string }) => {
   const [users, setUsers] = useState<User[]>([]);
 
   // states for texting window
-  const [currentChat, setCurrentChat] = useState<string>("");
-  const [currentChatName, setCurrentChatName] = useState<string>("");
+  const [currentChat, setCurrentChat] = useState<CurrentChat | null>(null);
+  const [currentChatName, setCurrentChatName] = useState<string | null>(null);
   const [chatWindow, setChatWindow] = useState<boolean>(false);
   const [loadingWindow, setLoadingWindow] = useState<boolean>(false);
 
   // states for chat partners
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
-  const [chatPartnersViaSocket, setChatPartnerViaSocket] = useState<ChatPartner[]>([]);
+  const [, setChatPartnerViaSocket] = useState<ChatPartner[]>([]);
   const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
 
   const [textMessage, setTextMessage] = useState<string>("");
@@ -45,7 +45,7 @@ const TextingSection = ({ token }: { token: string }) => {
   const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
 
-  const [lastChat, setLastChat] = useState<string>("");
+  const [, setLastChat] = useState<string>("");
 
   const toast = useToast();
 
@@ -105,7 +105,7 @@ const TextingSection = ({ token }: { token: string }) => {
     }
   };
 
-  const handleChatButtonClick = async (receiverEmail: string) => {
+  const handleChatButtonClick = async (receiverId: number, receiverName: string, receiverEmail: string) => {
     setLoadingWindow(true);
     try {
       if (ws && ws.OPEN) {
@@ -127,7 +127,11 @@ const TextingSection = ({ token }: { token: string }) => {
             console.log(`${receiverEmail} has connected to the chat`);
             getDetailsAboutChatPartner(receiverEmail);
             setChatWindow(true);
-            setCurrentChat(receiverEmail);
+            setCurrentChat({
+              receiverId: receiverId,
+              receiverName: receiverName,
+              receiverEmail: receiverEmail
+            });
             fetchingChatPartnersFromDatabase(currentUser?.id as number);
             toast({
               title: `${receiverEmail} has connected to the chat`,
@@ -147,7 +151,11 @@ const TextingSection = ({ token }: { token: string }) => {
             );
             getDetailsAboutChatPartner(receiverEmail);
             setChatWindow(true);
-            setCurrentChat(receiverEmail);
+            setCurrentChat({
+              receiverId: receiverId,
+              receiverName: receiverName,
+              receiverEmail: receiverEmail
+            });
             fetchingChatPartnersFromDatabase(currentUser?.id as number);
             toast({
               title: `${receiverEmail} is offline, but you can still send messages`,
@@ -244,13 +252,23 @@ const TextingSection = ({ token }: { token: string }) => {
         "Details about your chat partner: ",
         chatPartnerDetailResponse.data
       );
-      setCurrentChatName(chatPartnerDetailResponse.data.chatPartnerName.name);
     } catch (error) {
       console.error("Error while fetching details about chat partner: ", error);
     }
   };
 
-  const handleSendButtonClick = async (receiverEmail: string) => {
+  const handleGetSpecificChatPartnerById = async (receiverId: number, senderId: number) => {
+    try {
+      const existingChatPartner = await axios.get(`http://localhost:8000/getchatpartnerbyid?chatPartnerId=${receiverId}&senderId=${senderId}`, {
+        withCredentials: true
+      });
+      setCurrentChatName(existingChatPartner.data.chatPartner.chatPartnerName);
+    } catch (error) {
+      console.error("Error while fetching specific chat partner by id from db: ", error);
+    };
+  };
+
+  const handleSendButtonClick = async (receiverId: number, receiverName: string, receiverEmail: string) => {
     try {
       if (ws && ws.OPEN) {
         ws.send(
@@ -270,6 +288,20 @@ const TextingSection = ({ token }: { token: string }) => {
             sentAt: new Date(Date.now()),
           },
         ]);
+
+        await handleGetSpecificChatPartnerById(receiverId, currentUser?.id as number);
+        if(currentChatName === null){
+          setChatPartners((prevChatPartners) => [
+            ...prevChatPartners,
+            {
+              chatPartnerId: receiverId,
+              chatPartnerName: receiverName,
+              chatPartnerEmail: receiverEmail,
+              latestChat: textMessage,
+              startedAt: new Date(Date.now())
+            }
+          ])
+        };
 
         ws.onclose = () => {
           console.log("Websocket connection closed");
@@ -490,7 +522,7 @@ const TextingSection = ({ token }: { token: string }) => {
                       className="w-[90%] bg-slate-400 flex flex-row py-2 rounded-xl hover:bg-slate-500 hover:cursor-pointer transition ease-in-out duration-200"
                       key={index}
                       onClick={() => {
-                        handleChatButtonClick(partner.chatPartnerEmail);
+                        handleChatButtonClick(partner.chatPartnerId, partner.chatPartnerName, partner.chatPartnerEmail);
                       }}
                     >
                       <div className="w-[25%] h-full flex justify-center items-center">
@@ -502,7 +534,7 @@ const TextingSection = ({ token }: { token: string }) => {
                         <div className="w-full h-[40%] flex flex-row justify-between pr-3">
                           <div>{partner.chatPartnerName}</div>
                           <div className="text-[0.7rem]">
-                            {handleDateFormat(partner.updatedAt)}
+                            {handleDateFormat(partner.updatedAt as Date)}
                           </div>
                         </div>
                         <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
@@ -517,7 +549,7 @@ const TextingSection = ({ token }: { token: string }) => {
           </div>
           {loadingWindow ? (
             "Loading Chat Window..."
-          ) : currentChat === "" && currentChatName === "" && !chatWindow ? (
+          ) : currentChat?.receiverName === "" && !chatWindow ? (
             <div className="w-[75%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
               <div className="w-full h-[90%] flex justify-center items-center">
                 <p className="font-bold font-Philosopher">
@@ -618,7 +650,11 @@ const TextingSection = ({ token }: { token: string }) => {
                     <div
                       className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full"
                       onClick={() => {
-                        handleSendButtonClick(currentChat);
+                        handleSendButtonClick(
+                          currentChat?.receiverId as number,
+                          currentChat?.receiverName as string,
+                          currentChat?.receiverEmail as string
+                        )
                       }}
                     >
                       <IoSend className="text-[1.5rem]" />
@@ -643,7 +679,7 @@ const TextingSection = ({ token }: { token: string }) => {
                 "getting all users..."
               ) : (
                 <div className="w-full flex flex-col gap-2">
-                  {users.map((user, index) => (
+                  {users && users.map((user, index) => (
                     <div
                       className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
                       key={index}
@@ -666,14 +702,13 @@ const TextingSection = ({ token }: { token: string }) => {
                           type="button"
                           className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
                           onClick={() => {
-                            handleChatButtonClick(user.email);
-                            setCurrentChatName(user.name);
+                            handleChatButtonClick(Number(user.id), String(user.name), user.email);
                             insertingChatPartnerInDB(
                               currentUser?.id as number,
-                              user.id,
+                              user.id as number,
                               currentUser?.name as string,
                               currentUser?.email as string,
-                              user.name,
+                              user.name as string,
                               user.email
                             );
                           }}

@@ -73,7 +73,14 @@ const ClientDashboard = () => {
   const handleLogOut = async () => {
     try {
       const logoutResponse = await axios.post(
-        `http://localhost:8000/logout?id=${currentUser?.id}`
+        `http://localhost:8000/logout?id=${currentUser?.id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          }
+        }
       );
       console.log("Logout message: ", logoutResponse);
       dispatch(LogoutSuccess());

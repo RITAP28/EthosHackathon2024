@@ -154,6 +154,37 @@ export async function getDetailsAboutChatPartner(req: Request, res: Response) {
   }
 }
 
+export async function getSpecificChatPartner(req: Request, res: Response) {
+  try {
+    const { chatPartnerId, senderId } = req.query;
+    const chatPartnerById = await prisma.chatPartners.findFirst({
+      where: {
+        senderId: Number(senderId),
+        chatPartnerId: Number(chatPartnerId)
+      }
+    });
+    if(!chatPartnerById){
+      console.log(`Chat Partner of id ${chatPartnerById} does not exist for user with id ${senderId}`);
+      return res.status(404).json({
+        success: false,
+        msg: `Chat Partner of id ${chatPartnerById} does not exist for user with id ${senderId}`
+      })
+    };
+    console.log(`Chat Partner of id ${chatPartnerId} found for user with id ${senderId}`);
+    return res.status(200).json({
+      success: true,
+      msg: `Chat Partner of id ${chatPartnerId} found for user with id ${senderId}`,
+      chatPartner: chatPartnerById
+    });
+  } catch (error) {
+    console.error("Error while fetching the specific chat partner you requested for: ", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error"
+    });
+  };
+};
+
 export async function retrieveChats(req: Request, res: Response){
   const { senderEmail, receiverEmail } = req.query;
   try {

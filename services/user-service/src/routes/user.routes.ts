@@ -1,6 +1,6 @@
 import express from 'express';
 import { getCurrentUser, readToken, refreshAccessToken, UserLoginFunction, UserLogoutFunction, UserRegisterFunction } from '../controllers/user.auth';
-import { getChatPartnersFromDB, getDetailsAboutChatPartner, getUsersFromDB, insertingChatPartnerintoDB, retrieveChats } from '../controllers/user.actions';
+import { getChatPartnersFromDB, getDetailsAboutChatPartner, getSpecificChatPartner, getUsersFromDB, insertingChatPartnerintoDB, retrieveChats } from '../controllers/user.actions';
 import { isAuthenticated } from '../middlewares/auth.middleware';
 
 export default (router: express.Router) => {
@@ -21,7 +21,7 @@ export default (router: express.Router) => {
     router.get('/getchatpartnersfromdb', isAuthenticated, getChatPartnersFromDB);
     router.get('/getchatpartnerdetail', isAuthenticated, getDetailsAboutChatPartner);
     router.get('/retrieveChats', isAuthenticated, retrieveChats);
-
+    router.get('/getchatpartnerbyid', isAuthenticated, getSpecificChatPartner);
     // test routes for generating key pairs
     // router.post('/createidentitykeypairs', generateKeys);
 }
