@@ -218,7 +218,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     const decodedRefreshToken = jwt.verify(
       refreshTokenFromDatabase?.refreshToken as string,
       refreshTokenSecret
-    ) as { userId: number, email: string };
+    ) as { userId: number, name: string, email: string };
 
     // invalid refresh token or expired
     if (!decodedRefreshToken) {
@@ -251,6 +251,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       console.log("User Id matches, hence the user is authenticated.");
       const accessToken = generateJWT(
         decodedRefreshToken.userId,
+        decodedRefreshToken.name,
         decodedRefreshToken.email,
         accessTokenSecret,
         accessExpiry

@@ -106,6 +106,8 @@ const TextingSection = ({ token }: { token: string }) => {
   };
 
   const handleChatButtonClick = async (receiverId: number, receiverName: string, receiverEmail: string) => {
+    console.log("receiverName: ", receiverName);
+    console.log("receiverEmail: ", receiverEmail);
     setLoadingWindow(true);
     try {
       if (ws && ws.OPEN) {
@@ -147,7 +149,7 @@ const TextingSection = ({ token }: { token: string }) => {
             `${receiverEmail} is offline, but you can still send messages`
           ) {
             console.log(
-              `${receiverEmail} is offlin, but you can still send messages`
+              `${receiverEmail} is offline, but you can still send messages`
             );
             getDetailsAboutChatPartner(receiverEmail);
             setChatWindow(true);
@@ -164,6 +166,7 @@ const TextingSection = ({ token }: { token: string }) => {
               isClosable: true,
               position: "top-right",
             });
+            onClose();
           }
         };
 
@@ -260,7 +263,11 @@ const TextingSection = ({ token }: { token: string }) => {
   const handleGetSpecificChatPartnerById = async (receiverId: number, senderId: number) => {
     try {
       const existingChatPartner = await axios.get(`http://localhost:8000/getchatpartnerbyid?chatPartnerId=${receiverId}&senderId=${senderId}`, {
-        withCredentials: true
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
       });
       setCurrentChatName(existingChatPartner.data.chatPartner.chatPartnerName);
     } catch (error) {
@@ -461,7 +468,7 @@ const TextingSection = ({ token }: { token: string }) => {
     setLoadingChatHistory(true);
     try {
       const senderEmail = currentUser?.email as string;
-      const receiverEmail = currentChat;
+      const receiverEmail = currentChat?.receiverEmail;
       const chats = await axios.get(
         `http://localhost:8000/retrievechats?senderEmail=${senderEmail}&receiverEmail=${receiverEmail}`,
         {
@@ -549,7 +556,7 @@ const TextingSection = ({ token }: { token: string }) => {
           </div>
           {loadingWindow ? (
             "Loading Chat Window..."
-          ) : currentChat?.receiverName === "" && !chatWindow ? (
+          ) : currentChat === null && currentChatName === null && !chatWindow ? (
             <div className="w-[75%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
               <div className="w-full h-[90%] flex justify-center items-center">
                 <p className="font-bold font-Philosopher">

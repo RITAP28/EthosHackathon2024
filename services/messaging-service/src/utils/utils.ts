@@ -18,6 +18,8 @@ export interface Text extends Document {
 }
 
 export interface ExtendedDecodedToken extends JwtPayload {
+    id: number;
+    name: string;
     email: string;
     iat: number;
 };
