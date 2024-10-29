@@ -22,7 +22,14 @@ import { GoPaperclip } from "react-icons/go";
 import { MdKeyboardVoice } from "react-icons/md";
 import { IoSend } from "react-icons/io5";
 
-const TextingSection = ({ token }: { token: string }) => {
+const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, setChatHistory }: {
+  token: string,
+  latestText: string,
+  setLatestText: React.Dispatch<React.SetStateAction<string>>,
+  ws: WebSocket | null,
+  chatHistory: ChatHistory[],
+  setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>
+}) => {
   console.log(token);
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -43,13 +50,11 @@ const TextingSection = ({ token }: { token: string }) => {
   const [textMessage, setTextMessage] = useState<string>("");
 
   const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  // const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
 
   const [, setLastChat] = useState<string>("");
 
   const toast = useToast();
-
-  const ws = useWebSocket();
 
   const getUsersFromDB = async () => {
     setLoading(true);
@@ -286,7 +291,7 @@ const TextingSection = ({ token }: { token: string }) => {
             message: textMessage,
           })
         );
-
+        setLatestText(textMessage);
         setChatHistory((prevChats) => [
           ...prevChats,
           {
@@ -404,6 +409,7 @@ const TextingSection = ({ token }: { token: string }) => {
 
         if (data.action === `receive-message`) {
           console.log(`message from ${currentChat}: `, data.textMetadata);
+          setLatestText(data.textMetadata);
           setChatHistory((prevChats) => [
             ...prevChats,
             {
@@ -463,7 +469,7 @@ const TextingSection = ({ token }: { token: string }) => {
         ws.onmessage = null;
       }
     };
-  }, [ws, toast, currentChat, currentUser?.email]);
+  }, [ws, toast, currentChat, currentUser?.email, setChatHistory]);
 
   const handleRetrieveChatsBetweenClients = useCallback(async () => {
     setLoadingChatHistory(true);
@@ -496,7 +502,7 @@ const TextingSection = ({ token }: { token: string }) => {
       console.error(`Error while fetching chats between clients: `, error);
     }
     setLoadingChatHistory(false);
-  }, [currentUser, currentChat, toast, accessToken]);
+  }, [currentUser, currentChat, toast, accessToken, setChatHistory]);
 
   useEffect(() => {
     handleRetrieveChatsBetweenClients();
@@ -546,7 +552,7 @@ const TextingSection = ({ token }: { token: string }) => {
                           </div>
                         </div>
                         <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
-                          {partner.latestChat}
+                          {latestText === "" ? partner.latestChat : latestText}
                         </div>
                       </div>
                     </div>

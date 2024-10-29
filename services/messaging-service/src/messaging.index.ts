@@ -149,6 +149,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           }
           return extendedClient?.user?.email === targetEmail;
         }) as ExtendedWebsocket | undefined;
+        console.log('targetUserSocket: ', targetUserSocket);
         console.log("targetUser email: ", targetUserSocket?.user.email);
 
         if (targetUserSocket === undefined) {
@@ -335,7 +336,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             },
           });
         } else if (SocketChatPartner.CLOSED) {
-          console.log(`${chatPartnerEmail} has disconnected unfortunately`);
+          console.log(`${chatPartnerEmail} has disconnected unfortunately or is offline.`);
           ws.send(
             JSON.stringify({
               message: `${chatPartnerEmail} has disconnected`,

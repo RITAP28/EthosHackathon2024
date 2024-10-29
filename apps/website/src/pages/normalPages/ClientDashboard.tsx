@@ -19,10 +19,13 @@ import {
   AccessTokenRefreshSuccess,
   LogoutSuccess,
 } from "../../redux/slices/user.slice";
+import { ChatHistory } from "../../lib/interface";
 
 const ClientDashboard = () => {
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
   const [token, setToken] = useState<string>("");
+  const [latestText, setLatestText] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const ws = useWebSocket();
   const toast = useToast();
   const navigate = useNavigate();
@@ -137,7 +140,27 @@ const ClientDashboard = () => {
             duration: 4000,
             isClosable: true,
           });
-        }
+        } else if(data.action === "receive-message") {
+          setReceivedText(data.message);
+          console.log(`message received successfully from ${data.from}`);
+          console.log('received text: ', receivedText);
+          setChatHistory((prevChats) => [
+            ...prevChats,
+            {
+              textMetadata: data.textMetadata,
+              senderEmail: data.from,
+              receiverEmail: data.to,
+              sentAt: data.sentAt,
+            },
+          ]);
+          toast({
+            title: `${data.from} has sent a message`,
+            status: "success",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right"
+          });
+        };
       };
 
       ws.onerror = () => {
@@ -154,7 +177,7 @@ const ClientDashboard = () => {
         });
       };
     }
-  }, [currentUser, ws, toast, navigate, token, accessToken]);
+  }, [currentUser, ws, toast, navigate, token, accessToken, latestText]);
 
   return (
     <div className="max-h-screen bg-neutral-900 flex flex-row relative w-full">
@@ -227,7 +250,7 @@ const ClientDashboard = () => {
             </div>
           </div>
           <div className="w-[94%] min-h-screen z-20">
-            <TextingSection token={token} />
+            <TextingSection token={token} latestText={latestText} setLatestText={setLatestText} ws={ws} chatHistory={chatHistory} setChatHistory={setChatHistory} />
           </div>
         </>
       ) : (
