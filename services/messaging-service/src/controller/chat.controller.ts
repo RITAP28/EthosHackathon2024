@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import express from "express";
 import { prisma } from "../../../../db/db";
 import { wss } from "../messaging.index";
-import { ExtendedWebsocket } from "../utils/utils";
+import { ExtendedWebsocket, Receiver, Sender } from "../utils/utils";
 
 export async function getUsersFromDatabase(email: string) {
   try {
@@ -74,5 +74,48 @@ export async function getUndeliveredMessages(receiverEmail: string) {
       "Error while getting undelivered messages from database: ",
       error
     );
+  }
+}
+
+export async function createChatPartnerEntry(sender: Sender, receiver: Receiver, message: string) {
+  console.log("sender: ", sender);
+  console.log("receiver: ", receiver);
+  try {
+    await prisma.chatPartners.create({
+      data: {
+        senderId: sender.userId,
+        senderName: sender.name,
+        senderEmail: sender.email,
+        chatPartnerId: receiver.userId,
+        chatPartnerName: receiver.name,
+        chatPartnerEmail: receiver.email,
+        latestChat: message,
+        updatedAt: new Date(Date.now())
+      }
+    })
+    console.log('Chat Partner entry created successfully')
+  } catch (error) {
+    console.error('Error while creating chat partner entry: ', error);
+  }
+}
+
+export async function updateChatPartnerEntry(sender: Sender, receiver: Receiver, message: string){
+  console.log("sender: ", sender);
+  console.log("receiver: ", receiver);
+  try {
+    await prisma.chatPartners.update({
+      where: {
+        senderEmail_chatPartnerEmail: {
+          senderEmail: sender.email,
+          chatPartnerEmail: receiver.email
+        }
+      },
+      data: {
+        latestChat: message,
+        updatedAt: new Date(Date.now())
+      }
+    })
+  } catch (error) {
+    console.error("Error while updating chat partner entry: ", error);
   }
 }

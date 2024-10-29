@@ -18,7 +18,7 @@ export interface Text extends Document {
 }
 
 export interface ExtendedDecodedToken extends JwtPayload {
-    id: number;
+    userId: number;
     name: string;
     email: string;
     iat: number;
@@ -28,6 +28,18 @@ export interface ExtendedWebsocket extends WebSocket {
     user: ExtendedDecodedToken;
     chatPartner: ExtendedWebsocket;
 };
+
+export interface Sender {
+    userId: number;
+    name: string;
+    email: string;
+};
+
+export interface Receiver {
+    userId: number;
+    name: string;
+    email: string
+}
 
 export const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;
 export const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET as string;

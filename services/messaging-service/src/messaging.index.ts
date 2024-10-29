@@ -12,7 +12,9 @@ import {
 import { prisma } from "../../../db/db";
 import {
   addChatsToDatabase,
+  createChatPartnerEntry,
   getUndeliveredMessages,
+  updateChatPartnerEntry,
 } from "./controller/chat.controller";
 
 dotenv.config();
@@ -238,71 +240,52 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               },
             });
 
-            const existingChatPartners = await prisma.chatPartners.findMany({
-              where: {
-                AND: [
-                  {
-                    senderEmail: ws.user.email,
-                    chatPartnerEmail: SocketChatPartner.user.email,
-                  },
-                  {
-                    senderEmail: SocketChatPartner.user.email,
-                    chatPartnerEmail: ws.user.email,
-                  },
-                ],
-              },
-            });
-
-            if (!existingChatPartners) {
-              await prisma.chatPartners.create({
-                data: {
-                  senderId: ws.user.id,
-                  senderName: ws.user.name,
-                  senderEmail: ws.user.email,
-                  chatPartnerId: SocketChatPartner.user.id,
-                  chatPartnerName: SocketChatPartner.user.name,
-                  chatPartnerEmail: SocketChatPartner.user.email,
-                  latestChat: parsedMessage.message,
-                },
-              });
-              await prisma.chatPartners.create({
-                data: {
-                  senderId: SocketChatPartner.user.id,
-                  senderName: SocketChatPartner.user.name,
-                  senderEmail: SocketChatPartner.user.email,
-                  chatPartnerId: ws.user.id,
-                  chatPartnerName: ws.user.name,
-                  chatPartnerEmail: ws.user.email,
-                  latestChat: parsedMessage.message,
-                },
-              });
-            } else {
-              // updating the latestChat in both the rows of the chatPartner model
-              await prisma.chatPartners.update({
+            const [existingSenderEntry, existingReceiverEntry] = await Promise.all([
+              prisma.chatPartners.findUnique({
                 where: {
                   senderEmail_chatPartnerEmail: {
                     senderEmail: ws.user.email,
-                    chatPartnerEmail: chatPartnerEmail,
-                  },
-                },
-                data: {
-                  latestChat: parsedMessage.message,
-                  updatedAt: new Date(Date.now()),
-                },
-              });
-              await prisma.chatPartners.update({
+                    chatPartnerEmail: chatPartnerEmail
+                  }
+                }
+              }),
+              prisma.chatPartners.findUnique({
                 where: {
                   senderEmail_chatPartnerEmail: {
                     senderEmail: chatPartnerEmail,
-                    chatPartnerEmail: ws.user.email,
-                  },
-                },
-                data: {
-                  latestChat: parsedMessage.message,
-                  updatedAt: new Date(Date.now()),
-                },
-              });
+                    chatPartnerEmail: ws.user.email
+                  }
+                }
+              })
+            ]);
+
+            if(!existingSenderEntry){
+              await createChatPartnerEntry(
+                ws.user,
+                SocketChatPartner.user,
+                parsedMessage.message
+              );
+            } else {
+              await updateChatPartnerEntry(
+                ws.user,
+                SocketChatPartner.user,
+                parsedMessage.message
+              )
             }
+
+            if(!existingReceiverEntry){
+              await createChatPartnerEntry(
+                SocketChatPartner.user,
+                ws.user,
+                parsedMessage.message
+              )
+            } else {
+              await updateChatPartnerEntry(
+                SocketChatPartner.user,
+                ws.user,
+                parsedMessage.message
+              )
+            };
           }
           ws.send(
             JSON.stringify({

@@ -255,6 +255,7 @@ const TextingSection = ({ token }: { token: string }) => {
         "Details about your chat partner: ",
         chatPartnerDetailResponse.data
       );
+      setCurrentChatName(chatPartnerDetailResponse.data.chatPartnerName.name);
     } catch (error) {
       console.error("Error while fetching details about chat partner: ", error);
     }
@@ -541,7 +542,7 @@ const TextingSection = ({ token }: { token: string }) => {
                         <div className="w-full h-[40%] flex flex-row justify-between pr-3">
                           <div>{partner.chatPartnerName}</div>
                           <div className="text-[0.7rem]">
-                            {handleDateFormat(partner.updatedAt as Date)}
+                            {partner.updatedAt && handleDateFormat(partner.updatedAt)}
                           </div>
                         </div>
                         <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
