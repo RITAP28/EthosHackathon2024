@@ -12,6 +12,7 @@ import {
 import { prisma } from "../../../db/db";
 import {
   addChatsToDatabase,
+  createAndUpdateChatPartnersData,
   createChatPartnerEntry,
   getUndeliveredMessages,
   updateChatPartnerEntry,
@@ -105,6 +106,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
       // for getting all the messages sent by others to this user while the socket connection was not established
       const undeliveredMessages = await getUndeliveredMessages(ws.user.email);
 
+      console.log("undelivered messages: ", undeliveredMessages);
+
       if (undeliveredMessages && undeliveredMessages.length > 0) {
         for (const message of undeliveredMessages) {
           ws.send(
@@ -149,7 +152,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           }
           return extendedClient?.user?.email === targetEmail;
         }) as ExtendedWebsocket | undefined;
-        console.log('targetUserSocket: ', targetUserSocket);
+        // console.log('targetUserSocket: ', targetUserSocket);
         console.log("targetUser email: ", targetUserSocket?.user.email);
 
         if (targetUserSocket === undefined) {
@@ -210,10 +213,12 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         const chatPartnerEmail = parsedMessage.targetEmail as string;
         const SocketChatPartner = ws.chatPartner;
         console.log("chat partner email: ", chatPartnerEmail);
+
         if (
           SocketChatPartner &&
           chatPartnerEmail === SocketChatPartner.user.email
         ) {
+          console.log("socket chat partner email: ", ws.chatPartner.user.email);
           // sending the data to the client attached to the SocketChatPartner
           SocketChatPartner.send(
             JSON.stringify({
@@ -241,52 +246,16 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               },
             });
 
-            const [existingSenderEntry, existingReceiverEntry] = await Promise.all([
-              prisma.chatPartners.findUnique({
-                where: {
-                  senderEmail_chatPartnerEmail: {
-                    senderEmail: ws.user.email,
-                    chatPartnerEmail: chatPartnerEmail
-                  }
-                }
-              }),
-              prisma.chatPartners.findUnique({
-                where: {
-                  senderEmail_chatPartnerEmail: {
-                    senderEmail: chatPartnerEmail,
-                    chatPartnerEmail: ws.user.email
-                  }
-                }
-              })
-            ]);
+            await createAndUpdateChatPartnersData(
+              ws.user,
+              SocketChatPartner.user,
+              chatPartnerEmail,
+              parsedMessage.message
+            );
 
-            if(!existingSenderEntry){
-              await createChatPartnerEntry(
-                ws.user,
-                SocketChatPartner.user,
-                parsedMessage.message
-              );
-            } else {
-              await updateChatPartnerEntry(
-                ws.user,
-                SocketChatPartner.user,
-                parsedMessage.message
-              )
-            }
-
-            if(!existingReceiverEntry){
-              await createChatPartnerEntry(
-                SocketChatPartner.user,
-                ws.user,
-                parsedMessage.message
-              )
-            } else {
-              await updateChatPartnerEntry(
-                SocketChatPartner.user,
-                ws.user,
-                parsedMessage.message
-              )
-            };
+            console.log(
+              "the function createAndUpdateChatPartnerData ran successfully"
+            );
           }
           ws.send(
             JSON.stringify({
@@ -311,32 +280,19 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               isDelivered: false,
             },
           });
-          await prisma.chatPartners.update({
-            where: {
-              senderEmail_chatPartnerEmail: {
-                senderEmail: ws.user.email,
-                chatPartnerEmail: chatPartnerEmail,
-              },
-            },
-            data: {
-              latestChat: parsedMessage.message,
-              updatedAt: new Date(Date.now()),
-            },
-          });
-          await prisma.chatPartners.update({
-            where: {
-              senderEmail_chatPartnerEmail: {
-                senderEmail: chatPartnerEmail,
-                chatPartnerEmail: ws.user.email,
-              },
-            },
-            data: {
-              latestChat: parsedMessage.message,
-              updatedAt: new Date(Date.now()),
-            },
-          });
+          await createAndUpdateChatPartnersData(
+            ws.user, // sender = defined
+            SocketChatPartner, // receiver = undefined
+            chatPartnerEmail, // receiver email = undefined
+            parsedMessage.message // text metadata
+          );
+          console.log(
+            "the function createAndUpdateChatPartnerData ran successfully"
+          );
         } else if (SocketChatPartner.CLOSED) {
-          console.log(`${chatPartnerEmail} has disconnected unfortunately or is offline.`);
+          console.log(
+            `${chatPartnerEmail} has disconnected unfortunately or is offline.`
+          );
           ws.send(
             JSON.stringify({
               message: `${chatPartnerEmail} has disconnected`,

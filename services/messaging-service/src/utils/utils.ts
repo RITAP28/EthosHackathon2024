@@ -18,7 +18,7 @@ export interface Text extends Document {
 }
 
 export interface ExtendedDecodedToken extends JwtPayload {
-    userId: number;
+    id: number;
     name: string;
     email: string;
     iat: number;
@@ -30,13 +30,13 @@ export interface ExtendedWebsocket extends WebSocket {
 };
 
 export interface Sender {
-    userId: number;
+    id: number;
     name: string;
     email: string;
 };
 
 export interface Receiver {
-    userId: number;
+    id: number;
     name: string;
     email: string
 }

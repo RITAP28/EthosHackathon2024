@@ -14,7 +14,6 @@ import { ChatHistory, ChatPartner, CurrentChat, User } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
-import { useWebSocket } from "../hooks/UseWebsocket";
 import { CiLock } from "react-icons/ci";
 import { FcVideoCall } from "react-icons/fc";
 import { CiMenuKebab } from "react-icons/ci";
@@ -408,7 +407,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
         console.log(`Received message from the server: `, data);
 
         if (data.action === `receive-message`) {
-          console.log(`message from ${currentChat}: `, data.textMetadata);
+          console.log(`message from ${data.from}: `, data.textMetadata);
           setLatestText(data.textMetadata);
           setChatHistory((prevChats) => [
             ...prevChats,
@@ -421,7 +420,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           ]);
           setLastChat(data.textMetadata);
           toast({
-            title: `Received message from ${currentChat} successfully`,
+            title: `Received message from ${data.from} successfully`,
             status: "success",
             duration: 4000,
             isClosable: true,
@@ -469,7 +468,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
         ws.onmessage = null;
       }
     };
-  }, [ws, toast, currentChat, currentUser?.email, setChatHistory]);
+  }, [ws, toast, currentChat, currentUser?.email, setChatHistory, setLatestText]);
 
   const handleRetrieveChatsBetweenClients = useCallback(async () => {
     setLoadingChatHistory(true);

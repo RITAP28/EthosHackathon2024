@@ -141,9 +141,9 @@ const ClientDashboard = () => {
             isClosable: true,
           });
         } else if(data.action === "receive-message") {
-          setReceivedText(data.message);
+          setLatestText(data.message);
           console.log(`message received successfully from ${data.from}`);
-          console.log('received text: ', receivedText);
+          console.log('received text: ', latestText);
           setChatHistory((prevChats) => [
             ...prevChats,
             {

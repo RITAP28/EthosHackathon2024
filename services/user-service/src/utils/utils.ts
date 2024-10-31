@@ -42,7 +42,7 @@ export const UserLoginSchema = z.object({
 export const generateJWT = (userId: number, name: string, email: string, secret: string, expirationTime: number) => {
   return jwt.sign(
     {
-      userId: userId,
+      id: userId,
       name: name,
       email: email
     },

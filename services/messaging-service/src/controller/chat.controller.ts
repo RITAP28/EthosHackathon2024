@@ -1,5 +1,3 @@
-import { Request, Response } from "express";
-import express from "express";
 import { prisma } from "../../../../db/db";
 import { wss } from "../messaging.index";
 import { ExtendedWebsocket, Receiver, Sender } from "../utils/utils";
@@ -77,45 +75,229 @@ export async function getUndeliveredMessages(receiverEmail: string) {
   }
 }
 
-export async function createChatPartnerEntry(sender: Sender, receiver: Receiver, message: string) {
+export async function createChatPartnerEntry(sender: Sender, receiver: Receiver, receiverEmail: string, message: string) {
   console.log("sender: ", sender);
   console.log("receiver: ", receiver);
   try {
-    await prisma.chatPartners.create({
-      data: {
-        senderId: sender.userId,
-        senderName: sender.name,
-        senderEmail: sender.email,
-        chatPartnerId: receiver.userId,
-        chatPartnerName: receiver.name,
-        chatPartnerEmail: receiver.email,
-        latestChat: message,
-        updatedAt: new Date(Date.now())
-      }
-    })
-    console.log('Chat Partner entry created successfully')
+    if(receiver === undefined){
+      const receiverInformation = await prisma.user.findUnique({
+        where: {
+          email: receiverEmail
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }) as Receiver;
+      console.log("Receiver Information: ", receiverInformation);
+      if(receiverInformation){
+        await prisma.chatPartners.update({
+          where: {
+            senderEmail_chatPartnerEmail: {
+              senderEmail: sender.email,
+              chatPartnerEmail: receiverEmail
+            }
+          },
+          data: {
+            latestChat: message,
+            updatedAt: new Date(Date.now())
+          }
+        });
+    } else {
+      console.log(`No user found in the database having email ${receiverEmail}`)
+    }
+   } else {
+      await prisma.chatPartners.create({
+        data: {
+          senderId: sender.id,
+          senderName: sender.name,
+          senderEmail: sender.email,
+          chatPartnerId: receiver.id,
+          chatPartnerName: receiver.name,
+          chatPartnerEmail: receiver.email,
+          latestChat: message,
+          updatedAt: new Date(Date.now())
+        }
+      })
+      console.log('Chat Partner entry created successfully')
+    }
   } catch (error) {
     console.error('Error while creating chat partner entry: ', error);
   }
 }
 
-export async function updateChatPartnerEntry(sender: Sender, receiver: Receiver, message: string){
+export async function updateChatPartnerEntry(sender: Sender, receiver: Receiver, receiverEmail: string, message: string){
   console.log("sender: ", sender);
   console.log("receiver: ", receiver);
   try {
-    await prisma.chatPartners.update({
-      where: {
-        senderEmail_chatPartnerEmail: {
-          senderEmail: sender.email,
-          chatPartnerEmail: receiver.email
+    if(receiver === undefined){
+      const receiverInformation = await prisma.user.findUnique({
+        where: {
+          email: receiverEmail
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true
         }
-      },
-      data: {
-        latestChat: message,
-        updatedAt: new Date(Date.now())
+      }) as Receiver;
+      console.log("Receiver Information: ", receiverInformation);
+      if(receiverInformation){
+        await prisma.chatPartners.update({
+          where: {
+            senderEmail_chatPartnerEmail: {
+              senderEmail: sender.email,
+              chatPartnerEmail: receiverEmail
+            }
+          },
+          data: {
+            latestChat: message,
+            updatedAt: new Date(Date.now())
+          }
+        });
+      } else {
+        console.log("No receiver found with email: ", receiverEmail);
       }
-    })
+    } else {
+      await prisma.chatPartners.update({
+        where: {
+          senderEmail_chatPartnerEmail: {
+            senderEmail: sender.email,
+            chatPartnerEmail: receiver.email
+          }
+        },
+        data: {
+          latestChat: message,
+          updatedAt: new Date(Date.now())
+        }
+      })
+    }
   } catch (error) {
     console.error("Error while updating chat partner entry: ", error);
+  }
+}
+
+export async function createAndUpdateChatPartnersData(sender: Sender, receiver: Receiver, receiverEmail: string, textMetadata: string) {
+  try {
+    if(receiver === undefined){
+      const receiverInformation = await prisma.user.findUnique({
+        where: {
+          email: receiverEmail
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }) as Receiver;
+      console.log("Receiver Information: ", receiverInformation);
+      if(receiverInformation){
+        const [existingSenderEntry, existingReceiverEntry] = await Promise.all([
+          prisma.chatPartners.findUnique({
+            where: {
+              senderEmail_chatPartnerEmail: {
+                senderEmail: sender.email,
+                chatPartnerEmail: receiverInformation?.email as string
+              }
+            }
+          }),
+          prisma.chatPartners.findUnique({
+            where: {
+              senderEmail_chatPartnerEmail: {
+                senderEmail: receiverInformation?.email as string,
+                chatPartnerEmail: sender.email
+              }
+            }
+          })
+        ]);
+  
+        if(!existingSenderEntry){
+          await createChatPartnerEntry(
+            sender, // sender here
+            receiverInformation, // receiver here
+            receiverEmail, // receiver email here
+            textMetadata
+          );
+        } else {
+          await updateChatPartnerEntry(
+            sender,
+            receiverInformation,
+            receiverEmail,
+            textMetadata
+          )
+        }
+        
+        // vice-versa information put into the database 
+        if(!existingReceiverEntry){
+          await createChatPartnerEntry(
+            receiverInformation, // sender here
+            sender, // receiver here
+            sender.email, // receiver email here
+            textMetadata
+          )
+        } else {
+          await updateChatPartnerEntry(
+            receiverInformation,
+            sender,
+            sender.email,
+            textMetadata
+          )
+        };
+      }
+    } else {
+      const [existingSenderEntry, existingReceiverEntry] = await Promise.all([
+        prisma.chatPartners.findUnique({
+          where: {
+            senderEmail_chatPartnerEmail: {
+              senderEmail: sender.email,
+              chatPartnerEmail: receiver.email
+            }
+          }
+        }),
+        prisma.chatPartners.findUnique({
+          where: {
+            senderEmail_chatPartnerEmail: {
+              senderEmail: receiver.email,
+              chatPartnerEmail: sender.email
+            }
+          }
+        })
+      ]);
+  
+      if(!existingSenderEntry){
+        await createChatPartnerEntry(
+          sender,
+          receiver,
+          receiverEmail,
+          textMetadata
+        );
+      } else {
+        await updateChatPartnerEntry(
+          sender,
+          receiver,
+          receiverEmail,
+          textMetadata
+        )
+      }
+  
+      if(!existingReceiverEntry){
+        await createChatPartnerEntry(
+          receiver,
+          sender,
+          sender.email,
+          textMetadata
+        )
+      } else {
+        await updateChatPartnerEntry(
+          receiver,
+          sender,
+          sender.email,
+          textMetadata
+        )
+      };
+    }
+  } catch (error) {
+    console.error('Error while creating or updating the chat partner: ', error);
   }
 }
