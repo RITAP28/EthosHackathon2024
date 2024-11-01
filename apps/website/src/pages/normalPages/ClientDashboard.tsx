@@ -19,12 +19,17 @@ import {
   AccessTokenRefreshSuccess,
   LogoutSuccess,
 } from "../../redux/slices/user.slice";
-import { ChatHistory } from "../../lib/interface";
+import { ChatHistory, latestTextWithUser } from "../../lib/interface";
+
 
 const ClientDashboard = () => {
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
   const [token, setToken] = useState<string>("");
-  const [latestText, setLatestText] = useState<string>("");
+  const [latestText, setLatestText] = useState<latestTextWithUser>({
+    receivedBy: "",
+    sentBy: "",
+    latestText: ""
+  });
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const ws = useWebSocket();
   const toast = useToast();
@@ -141,7 +146,11 @@ const ClientDashboard = () => {
             isClosable: true,
           });
         } else if(data.action === "receive-message") {
-          setLatestText(data.message);
+          setLatestText({
+            receivedBy: data.to,
+            sentBy: data.from,
+            latestText: data.textMetadata
+          });
           console.log(`message received successfully from ${data.from}`);
           console.log('received text: ', latestText);
           setChatHistory((prevChats) => [
@@ -160,7 +169,13 @@ const ClientDashboard = () => {
             isClosable: true,
             position: "top-right"
           });
-        };
+        } else if(data.action === "send-message") {
+          setLatestText({
+            receivedBy: data.to,
+            sentBy: data.from,
+            latestText: data.textMetadata
+          });
+        }
       };
 
       ws.onerror = () => {

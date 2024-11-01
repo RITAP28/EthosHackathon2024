@@ -10,7 +10,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import { ChatHistory, ChatPartner, CurrentChat, User } from "../lib/interface";
+import { ChatHistory, ChatPartner, CurrentChat, latestTextWithUser, User } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
@@ -23,8 +23,8 @@ import { IoSend } from "react-icons/io5";
 
 const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, setChatHistory }: {
   token: string,
-  latestText: string,
-  setLatestText: React.Dispatch<React.SetStateAction<string>>,
+  latestText: latestTextWithUser,
+  setLatestText: React.Dispatch<React.SetStateAction<latestTextWithUser>>,
   ws: WebSocket | null,
   chatHistory: ChatHistory[],
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>
@@ -49,10 +49,6 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
   const [textMessage, setTextMessage] = useState<string>("");
 
   const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
-  // const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
-
-  const [, setLastChat] = useState<string>("");
-
   const toast = useToast();
 
   const getUsersFromDB = async () => {
@@ -290,7 +286,11 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
             message: textMessage,
           })
         );
-        setLatestText(textMessage);
+        setLatestText({
+          receivedBy: receiverEmail,
+          sentBy: currentUser?.email as string,
+          latestText: textMessage
+        });
         setChatHistory((prevChats) => [
           ...prevChats,
           {
@@ -408,7 +408,11 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
 
         if (data.action === `receive-message`) {
           console.log(`message from ${data.from}: `, data.textMetadata);
-          setLatestText(data.textMetadata);
+          setLatestText({
+            receivedBy: data.to,
+            sentBy: data.from,
+            latestText: data.textMetadata
+          });
           setChatHistory((prevChats) => [
             ...prevChats,
             {
@@ -418,9 +422,30 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
               sentAt: data.sentAt,
             },
           ]);
-          setLastChat(data.textMetadata);
           toast({
             title: `Received message from ${data.from} successfully`,
+            status: "success",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right",
+          });
+        } else if(data.action === 'send-message') {
+          setLatestText({
+            receivedBy: data.to,
+            sentBy: data.from,
+            latestText: data.textMetadata
+          });
+          setChatHistory((prevChats) => [
+            ...prevChats,
+            {
+              textMetadata: data.textMetadata,
+              senderEmail: data.from,
+              receiverEmail: data.to,
+              sentAt: data.sentAt,
+            },
+          ]);
+          toast({
+            title: `Message sent to ${data.to} successfully`,
             status: "success",
             duration: 4000,
             isClosable: true,
@@ -429,7 +454,6 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
         } else if (
           data.message === `Message sent to ${currentChat} successfully`
         ) {
-          setLastChat(data.textMetadata);
           toast({
             title: `Message sent successfully to ${currentChat}`,
             status: "success",
@@ -551,7 +575,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
                           </div>
                         </div>
                         <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
-                          {latestText === "" ? partner.latestChat : latestText}
+                          {(latestText.sentBy === partner.chatPartnerEmail) ? latestText.latestText : partner.latestChat}
                         </div>
                       </div>
                     </div>

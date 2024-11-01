@@ -105,9 +105,6 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
 
       // for getting all the messages sent by others to this user while the socket connection was not established
       const undeliveredMessages = await getUndeliveredMessages(ws.user.email);
-
-      console.log("undelivered messages: ", undeliveredMessages);
-
       if (undeliveredMessages && undeliveredMessages.length > 0) {
         for (const message of undeliveredMessages) {
           ws.send(
@@ -259,7 +256,12 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           }
           ws.send(
             JSON.stringify({
+              action: "send-message",
               message: `Message sent to ${chatPartnerEmail} successfully`,
+              textMetadata: parsedMessage.message,
+              from: ws.user.email,
+              to: chatPartnerEmail,
+              sentAt: new Date(Date.now())
             })
           );
 

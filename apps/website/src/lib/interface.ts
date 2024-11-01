@@ -32,3 +32,9 @@ export interface CurrentChat {
     receiverName: string;
     receiverEmail: string;
 }
+
+export interface latestTextWithUser {
+    receivedBy: string;
+    sentBy: string;
+    latestText: string;
+  };
