@@ -37,4 +37,5 @@ export interface latestTextWithUser {
     receivedBy: string;
     sentBy: string;
     latestText: string;
+    sentAt: Date;
   };

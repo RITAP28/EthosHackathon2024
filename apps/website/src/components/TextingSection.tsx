@@ -289,7 +289,8 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
         setLatestText({
           receivedBy: receiverEmail,
           sentBy: currentUser?.email as string,
-          latestText: textMessage
+          latestText: textMessage,
+          sentAt: new Date(Date.now())
         });
         setChatHistory((prevChats) => [
           ...prevChats,
@@ -411,7 +412,8 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           setLatestText({
             receivedBy: data.to,
             sentBy: data.from,
-            latestText: data.textMetadata
+            latestText: data.textMetadata,
+            sentAt: data.sentAt
           });
           setChatHistory((prevChats) => [
             ...prevChats,
@@ -433,7 +435,8 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           setLatestText({
             receivedBy: data.to,
             sentBy: data.from,
-            latestText: data.textMetadata
+            latestText: data.textMetadata,
+            sentAt: data.sentAt
           });
           setChatHistory((prevChats) => [
             ...prevChats,
@@ -571,7 +574,9 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
                         <div className="w-full h-[40%] flex flex-row justify-between pr-3">
                           <div>{partner.chatPartnerName}</div>
                           <div className="text-[0.7rem]">
-                            {partner.updatedAt && handleDateFormat(partner.updatedAt)}
+                            {(latestText.sentAt === partner.updatedAt) ? handleDateFormat(latestText.sentAt) : (
+                              partner.updatedAt && handleDateFormat(partner.updatedAt)
+                            )}
                           </div>
                         </div>
                         <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">

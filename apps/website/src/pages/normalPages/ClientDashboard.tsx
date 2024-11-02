@@ -28,7 +28,8 @@ const ClientDashboard = () => {
   const [latestText, setLatestText] = useState<latestTextWithUser>({
     receivedBy: "",
     sentBy: "",
-    latestText: ""
+    latestText: "",
+    sentAt: new Date(0)
   });
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const ws = useWebSocket();
@@ -149,7 +150,8 @@ const ClientDashboard = () => {
           setLatestText({
             receivedBy: data.to,
             sentBy: data.from,
-            latestText: data.textMetadata
+            latestText: data.textMetadata,
+            sentAt: data.sentAt
           });
           console.log(`message received successfully from ${data.from}`);
           console.log('received text: ', latestText);
@@ -173,7 +175,8 @@ const ClientDashboard = () => {
           setLatestText({
             receivedBy: data.to,
             sentBy: data.from,
-            latestText: data.textMetadata
+            latestText: data.textMetadata,
+            sentAt: data.sentAt
           });
         }
       };
