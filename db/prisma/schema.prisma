@@ -4,11 +4,16 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_PGADMIN_URL")
 }
 
 enum Role {
   USER
+  ADMIN
+}
+
+enum GroupRole {
+  MEMBER
   ADMIN
 }
 
@@ -21,6 +26,7 @@ model User {
   role            Role      @default(USER)
   createdAt       DateTime  @default(now())
   Session         Session[]
+  Members         Members[]
 }
 
 model Session {
@@ -56,4 +62,42 @@ model ChatPartners {
   updatedAt        DateTime?
 
   @@unique([senderEmail, chatPartnerEmail])
+}
+
+model Group {
+  id           Int       @id @unique @default(autoincrement())
+  name         String
+  description  String?
+  membersEmail String[]
+  totalMembers Int
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now())
+  Members      Members[]
+
+  @@unique([id, name])
+}
+
+model Members {
+  userId    Int
+  name      String
+  email     String
+  groupId   Int
+  groupName String
+  groupRole GroupRole @default(MEMBER)
+  group     Group     @relation(references: [id, name], fields: [groupId, groupName], onDelete: Cascade)
+  user      User      @relation(references: [id], fields: [userId], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model GroupChat {
+  id           Int      @id @unique @default(autoincrement())
+  groupId      Int
+  groupName    String
+  senderId     Int
+  senderName   String
+  senderEmail  String
+  textMetadata String
+  sentAt       DateTime @default(now())
+  isDelivered  Boolean  @default(false)
 }

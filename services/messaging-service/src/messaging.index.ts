@@ -13,9 +13,7 @@ import { prisma } from "../../../db/db";
 import {
   addChatsToDatabase,
   createAndUpdateChatPartnersData,
-  createChatPartnerEntry,
   getUndeliveredMessages,
-  updateChatPartnerEntry,
 } from "./controller/chat.controller";
 
 dotenv.config();
