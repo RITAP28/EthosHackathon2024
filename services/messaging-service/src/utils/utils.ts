@@ -26,7 +26,7 @@ export interface ExtendedDecodedToken extends JwtPayload {
   id: number;
   name: string;
   email: string;
-  iat: number;
+  iat?: number;
 }
 
 export interface Sender {
@@ -45,7 +45,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  isAuthenticated: boolean;
+  isAuthenticated?: boolean;
 }
 
 export interface Member {

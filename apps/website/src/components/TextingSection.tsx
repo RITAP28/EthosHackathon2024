@@ -89,11 +89,10 @@ const TextingSection = ({
     useState<boolean>(false);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [groupDescription, setGroupDescription] = useState<string | null>(null);
-  // const [groups, setGroups] = useState<Group[]>([]);
+
+  const [isAdded, setIsAdded] = useState<boolean | null>(null);
 
   const usersToAddInTheGroup: User[] = [];
-
-  // const [usersLoading, setUsersLoading] = useState<boolean>(false);
 
   const getUsersFromDB = async () => {
     setLoading(true);
@@ -634,30 +633,6 @@ const TextingSection = ({
     setGroupCreationLoading(false);
   };
 
-  // const handleGetGroups = async () => {
-  //   setLoadingGroups(true);
-  //   try {
-  //     const response = await axios.get(
-  //       `http://localhost:8000/get/groups?id=${currentUser?.id}`,
-  //       {
-  //         withCredentials: true,
-  //         headers: {
-  //           Authorization: `Bearer ${accessToken}`,
-  //           "Content-Type": "application/json",
-  //         },
-  //       }
-  //     );
-  //     console.log("Response for getting groups: ", response.data);
-  //     setGroups(response.data.groups);
-  //   } catch (error) {
-  //     console.error(
-  //       `Error while fetching groups for ${currentUser?.name}: `,
-  //       error
-  //     );
-  //   }
-  //   setLoadingGroups(false);
-  // };
-
   const handleRetrieveChatsBetweenClients = useCallback(async () => {
     setLoadingChatHistory(true);
     try {
@@ -694,6 +669,25 @@ const TextingSection = ({
   useEffect(() => {
     handleRetrieveChatsBetweenClients();
   }, [handleRetrieveChatsBetweenClients]);
+
+  const handleAddUserInGroup = async (user: User) => {
+    try {
+      if (!isAdded) {
+        usersToAddInTheGroup.push(user);
+        console.log(
+          "Total users to be added till now: ",
+          usersToAddInTheGroup.length
+        );
+        console.log("Another user added: ", usersToAddInTheGroup);
+      } else if(isAdded) {
+        setIsAdded(false);
+        console.log(`${user.name} has been removed from the users list`);
+        console.log("Another user removed: ", usersToAddInTheGroup);
+      }
+    } catch (error) {
+      console.error("Error while adding/removing user in group: ", error);
+    }
+  };
 
   return (
     <div className="w-full flex justify-start items-center h-[100%]">
@@ -763,13 +757,32 @@ const TextingSection = ({
                   "Loading your groups"
                 ) : (
                   <div className="w-full flex flex-col">
-                    {groups.length > 0
-                      ? groups.map((group, index) => (
-                          <div className="w-full" key={index}>
-                            <div className="">{group.name}</div>
-                          </div>
-                        ))
-                      : "Sorry, you are not a part of any group"}
+                    <div className="w-full flex justify-center">
+                      <button
+                        type="button"
+                        className="px-2 py-2 rounded-md bg-slate-400 text-black transition ease-in-out duration-200 hover:bg-slate-200 hover:cursor-pointer font-Philosopher"
+                        onClick={() => {
+                          setCreateGroupModal(true);
+                          setSearchUsersLoading(false);
+                          onOpen();
+                        }}
+                      >
+                        Create group
+                      </button>
+                    </div>
+                    {groups.length > 0 ? (
+                      groups.map((group, index) => (
+                        <div className="w-full" key={index}>
+                          <div className="">{group.name}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="w-full flex justify-center">
+                        <div className="w-[80%]">
+                          Sorry, you are not a part of any group
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
             </div>
@@ -1038,18 +1051,10 @@ const TextingSection = ({
                                 type="button"
                                 className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
                                 onClick={() => {
-                                  usersToAddInTheGroup.push(user);
-                                  console.log(
-                                    "Total users to be added till now: ",
-                                    usersToAddInTheGroup.length
-                                  );
-                                  console.log(
-                                    "Another user added: ",
-                                    usersToAddInTheGroup
-                                  );
+                                  handleAddUserInGroup(user);
                                 }}
                               >
-                                Add
+                                {isAdded ? "Remove" : "Add"}
                               </button>
                             </div>
                           </div>
@@ -1069,6 +1074,7 @@ const TextingSection = ({
                       console.log("group name: ", groupName);
                       console.log("group description: ", groupDescription);
                       console.log("users to be added: ", usersToAddInTheGroup);
+                      handleCreateGroup();
                     }}
                   >
                     Create Group

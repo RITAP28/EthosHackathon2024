@@ -252,9 +252,9 @@ export async function getLatestMessageBetweenUsers(senderEmail: string, receiver
 export async function getGroupsForUser(req: Request, res: Response){
   try {
     const { id } = req.query;
-    const groups = await prisma.member.findMany({
+    const groups = await prisma.group.findMany({
       where: {
-        userId: Number(id),
+        ownerId: Number(id),
       }
     });
     return res.status(200).json({
@@ -270,3 +270,8 @@ export async function getGroupsForUser(req: Request, res: Response){
     });
   };
 };
+
+        // ws.groups.push({
+        //   groupName: groupName,
+        //   groupDescription: groupDescription,
+        // });
