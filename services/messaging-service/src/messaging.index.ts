@@ -268,6 +268,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                   JSON.stringify({
                     message: `User with email, ${targetUserEmail}, is offline`,
                     status: "offline target user",
+                    offlineUserEmail: `${targetUserEmail}`
                   })
                 );
               } else {
@@ -344,7 +345,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         );
         ws.send(
           JSON.stringify({
-            message: `Group with name ${groupName}, having admin ${ws.user.name}, has been created successfully`,
+            message: `Group created successfully`,
             status: "success",
           })
         );

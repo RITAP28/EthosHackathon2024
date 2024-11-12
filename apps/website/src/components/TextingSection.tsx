@@ -10,7 +10,13 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import { ChatHistory, ChatPartner, CurrentChat, latestTextWithUser, User } from "../lib/interface";
+import {
+  ChatHistory,
+  ChatPartner,
+  CurrentChat,
+  latestTextWithUser,
+  User,
+} from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import { FaUser } from "react-icons/fa";
@@ -21,13 +27,28 @@ import { GoPaperclip } from "react-icons/go";
 import { MdKeyboardVoice } from "react-icons/md";
 import { IoSend } from "react-icons/io5";
 
-const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, setChatHistory }: {
-  token: string,
-  latestText: latestTextWithUser,
-  setLatestText: React.Dispatch<React.SetStateAction<latestTextWithUser>>,
-  ws: WebSocket | null,
-  chatHistory: ChatHistory[],
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>
+const TextingSection = ({
+  token,
+  latestText,
+  setLatestText,
+  ws,
+  chatHistory,
+  setChatHistory,
+  displayGroups,
+  setDisplayGroups,
+  displayIndividualChats,
+  setDisplayIndividualChats,
+}: {
+  token: string;
+  latestText: latestTextWithUser;
+  setLatestText: React.Dispatch<React.SetStateAction<latestTextWithUser>>;
+  ws: WebSocket | null;
+  chatHistory: ChatHistory[];
+  setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
+  displayGroups: boolean,
+  setDisplayGroups: React.Dispatch<React.SetStateAction<boolean>>;
+  displayIndividualChats: boolean;
+  setDisplayIndividualChats: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   console.log(token);
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
@@ -51,6 +72,15 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
   const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
   const toast = useToast();
 
+  const [groupCreationLoading, setGroupCreationLoading] =
+    useState<boolean>(false);
+  const [groupName, setGroupName] = useState<string | null>(null);
+  const [groupDescription, setGroupDescription] = useState<string | null>(null);
+
+  const usersToAddInTheGroup: User[] = [];
+
+  // const [usersLoading, setUsersLoading] = useState<boolean>(false);
+
   const getUsersFromDB = async () => {
     setLoading(true);
     try {
@@ -61,7 +91,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
-          }
+          },
         }
       );
       console.log(getUsersResponse.data);
@@ -96,7 +126,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
-          }
+          },
         }
       );
       console.log("Response: ", insertChatPartnerResponse);
@@ -105,7 +135,11 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
     }
   };
 
-  const handleChatButtonClick = async (receiverId: number, receiverName: string, receiverEmail: string) => {
+  const handleChatButtonClick = async (
+    receiverId: number,
+    receiverName: string,
+    receiverEmail: string
+  ) => {
     console.log("receiverName: ", receiverName);
     console.log("receiverEmail: ", receiverEmail);
     setLoadingWindow(true);
@@ -132,7 +166,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
             setCurrentChat({
               receiverId: receiverId,
               receiverName: receiverName,
-              receiverEmail: receiverEmail
+              receiverEmail: receiverEmail,
             });
             fetchingChatPartnersFromDatabase(currentUser?.id as number);
             toast({
@@ -156,7 +190,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
             setCurrentChat({
               receiverId: receiverId,
               receiverName: receiverName,
-              receiverEmail: receiverEmail
+              receiverEmail: receiverEmail,
             });
             fetchingChatPartnersFromDatabase(currentUser?.id as number);
             toast({
@@ -206,30 +240,33 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
     setLoadingWindow(false);
   };
 
-  const fetchingChatPartnersFromDatabase = useCallback(async (senderId: number) => {
-    setLoadingPartners(true);
-    try {
-      const chatPartners = await axios.get(
-        `http://localhost:8000/getchatpartnersfromdb?senderId=${senderId}`,
-        {
-          withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
+  const fetchingChatPartnersFromDatabase = useCallback(
+    async (senderId: number) => {
+      setLoadingPartners(true);
+      try {
+        const chatPartners = await axios.get(
+          `http://localhost:8000/getchatpartnersfromdb?senderId=${senderId}`,
+          {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
           }
-        }
-      );
-      console.log("Here are your chat partners: ", chatPartners.data);
-      setChatPartners(chatPartners.data.chatPartners);
-      // setLastChat(chatPartners.data.latestChat);
-    } catch (error) {
-      console.error(
-        "Error while fetching chat partners from database: ",
-        error
-      );
-    }
-    setLoadingPartners(false);
-  }, [accessToken]);
+        );
+        console.log("Here are your chat partners: ", chatPartners.data);
+        setChatPartners(chatPartners.data.chatPartners);
+        // setLastChat(chatPartners.data.latestChat);
+      } catch (error) {
+        console.error(
+          "Error while fetching chat partners from database: ",
+          error
+        );
+      }
+      setLoadingPartners(false);
+    },
+    [accessToken]
+  );
 
   useEffect(() => {
     // getting the chat partners from the database
@@ -247,8 +284,8 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           withCredentials: true,
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
       console.log(
@@ -261,22 +298,35 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
     }
   };
 
-  const handleGetSpecificChatPartnerById = async (receiverId: number, senderId: number) => {
+  const handleGetSpecificChatPartnerById = async (
+    receiverId: number,
+    senderId: number
+  ) => {
     try {
-      const existingChatPartner = await axios.get(`http://localhost:8000/getchatpartnerbyid?chatPartnerId=${receiverId}&senderId=${senderId}`, {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
+      const existingChatPartner = await axios.get(
+        `http://localhost:8000/getchatpartnerbyid?chatPartnerId=${receiverId}&senderId=${senderId}`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
       setCurrentChatName(existingChatPartner.data.chatPartner.chatPartnerName);
     } catch (error) {
-      console.error("Error while fetching specific chat partner by id from db: ", error);
-    };
+      console.error(
+        "Error while fetching specific chat partner by id from db: ",
+        error
+      );
+    }
   };
 
-  const handleSendButtonClick = async (receiverId: number, receiverName: string, receiverEmail: string) => {
+  const handleSendButtonClick = async (
+    receiverId: number,
+    receiverName: string,
+    receiverEmail: string
+  ) => {
     try {
       if (ws && ws.OPEN) {
         ws.send(
@@ -290,7 +340,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           receivedBy: receiverEmail,
           sentBy: currentUser?.email as string,
           latestText: textMessage,
-          sentAt: new Date(Date.now())
+          sentAt: new Date(Date.now()),
         });
         setChatHistory((prevChats) => [
           ...prevChats,
@@ -302,8 +352,11 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           },
         ]);
 
-        await handleGetSpecificChatPartnerById(receiverId, currentUser?.id as number);
-        if(currentChatName === null){
+        await handleGetSpecificChatPartnerById(
+          receiverId,
+          currentUser?.id as number
+        );
+        if (currentChatName === null) {
           setChatPartners((prevChatPartners) => [
             ...prevChatPartners,
             {
@@ -311,10 +364,10 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
               chatPartnerName: receiverName,
               chatPartnerEmail: receiverEmail,
               latestChat: textMessage,
-              startedAt: new Date(Date.now())
-            }
-          ])
-        };
+              startedAt: new Date(Date.now()),
+            },
+          ]);
+        }
 
         ws.onclose = () => {
           console.log("Websocket connection closed");
@@ -395,13 +448,13 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
     if (ws && ws.OPEN) {
       // fetching users from the database from the database via websockets
       ws.onopen = () => {
-        console.log('websocket connection opened successfully.');
+        console.log("websocket connection opened successfully.");
         ws.send(
           JSON.stringify({
-            action: 'fetch-chat-partners',
+            action: "fetch-chat-partners",
           })
         );
-      }
+      };
 
       ws.onmessage = (message) => {
         const data = JSON.parse(message.data);
@@ -413,7 +466,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
             receivedBy: data.to,
             sentBy: data.from,
             latestText: data.textMetadata,
-            sentAt: data.sentAt
+            sentAt: data.sentAt,
           });
           setChatHistory((prevChats) => [
             ...prevChats,
@@ -431,12 +484,12 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
             isClosable: true,
             position: "top-right",
           });
-        } else if(data.action === 'send-message') {
+        } else if (data.action === "send-message") {
           setLatestText({
             receivedBy: data.to,
             sentBy: data.from,
             latestText: data.textMetadata,
-            sentAt: data.sentAt
+            sentAt: data.sentAt,
           });
           setChatHistory((prevChats) => [
             ...prevChats,
@@ -477,7 +530,10 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           });
           console.log("Chat Partner Email mismatch happened");
           return;
-        } else if (data.message === `All the chats have been fetched for ${currentUser?.email} successfully`) {
+        } else if (
+          data.message ===
+          `All the chats have been fetched for ${currentUser?.email} successfully`
+        ) {
           setChatPartnerViaSocket(data.chatPartners);
           toast({
             title: `All the chats have been fetched for ${currentUser?.email} successfully`,
@@ -495,7 +551,74 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
         ws.onmessage = null;
       }
     };
-  }, [ws, toast, currentChat, currentUser?.email, setChatHistory, setLatestText]);
+  }, [
+    ws,
+    toast,
+    currentChat,
+    currentUser?.email,
+    setChatHistory,
+    setLatestText,
+  ]);
+
+  const handleCreateGroup = async () => {
+    setGroupCreationLoading(true);
+    try {
+      console.log("Users to create a group with: ", usersToAddInTheGroup);
+      if (ws && ws.OPEN) {
+        ws.send(
+          JSON.stringify({
+            action: "create-group",
+            groupName: groupName,
+            description: groupDescription,
+            users: usersToAddInTheGroup,
+          })
+        );
+
+        ws.onmessage = (message) => {
+          const data = JSON.parse(message.data);
+          console.log("Received message from the server: ", data);
+          if (data.message === "Group created successfully") {
+            console.log("Group created successfully");
+            toast({
+              title: `Group created successfully`,
+              description: `You have successfully created a group ${groupName}`,
+              status: "success",
+              duration: 4000,
+              isClosable: true,
+              position: "top-right",
+            });
+          } else if (
+            data.message ===
+            "Client exists not true, user not found in the list of clients"
+          ) {
+            console.log(
+              "Client exists not true, user not found in the list of clients"
+            );
+            toast({
+              title: `Client exists not true, user not found in the list of clients`,
+              status: "error",
+              duration: 4000,
+              isClosable: true,
+            });
+          } else if (data.status === "offline target user") {
+            console.log(`${data.offlineUserEmail} is offline.`);
+          } else if (data.status === "Target Client does not exist") {
+            console.log("Target Client does not exist");
+            toast({
+              title: "Target Client does not exist",
+              status: "error",
+              duration: 4000,
+              isClosable: true,
+              position: "top-right",
+            });
+          }
+        };
+      }
+    } catch (error) {
+      console.error("Error while creating a group: ", error);
+    }
+    setGroupCreationLoading(false);
+  };
 
   const handleRetrieveChatsBetweenClients = useCallback(async () => {
     setLoadingChatHistory(true);
@@ -508,8 +631,8 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
           withCredentials: true,
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
       console.log(
@@ -556,42 +679,51 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
                 ? "Loading your partners..."
                 : chatPartners.length > 0
                 ? chatPartners.map((partner, index) => {
-                  // setLastChat(partner.latestChat);
-                  return (
-                    <div
-                      className="w-[90%] bg-slate-400 flex flex-row py-2 rounded-xl hover:bg-slate-500 hover:cursor-pointer transition ease-in-out duration-200"
-                      key={index}
-                      onClick={() => {
-                        handleChatButtonClick(partner.chatPartnerId, partner.chatPartnerName, partner.chatPartnerEmail);
-                      }}
-                    >
-                      <div className="w-[25%] h-full flex justify-center items-center">
-                        <div className="bg-slate-300 p-3 rounded-xl">
-                          <FaUser className="text-[2rem]" />
-                        </div>
-                      </div>
-                      <div className="w-[75%] flex flex-col">
-                        <div className="w-full h-[40%] flex flex-row justify-between pr-3">
-                          <div>{partner.chatPartnerName}</div>
-                          <div className="text-[0.7rem]">
-                            {(latestText.sentAt === partner.updatedAt) ? handleDateFormat(latestText.sentAt) : (
-                              partner.updatedAt && handleDateFormat(partner.updatedAt)
-                            )}
+                    // setLastChat(partner.latestChat);
+                    return (
+                      <div
+                        className="w-[90%] bg-slate-400 flex flex-row py-2 rounded-xl hover:bg-slate-500 hover:cursor-pointer transition ease-in-out duration-200"
+                        key={index}
+                        onClick={() => {
+                          handleChatButtonClick(
+                            partner.chatPartnerId,
+                            partner.chatPartnerName,
+                            partner.chatPartnerEmail
+                          );
+                        }}
+                      >
+                        <div className="w-[25%] h-full flex justify-center items-center">
+                          <div className="bg-slate-300 p-3 rounded-xl">
+                            <FaUser className="text-[2rem]" />
                           </div>
                         </div>
-                        <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
-                          {(latestText.sentBy === partner.chatPartnerEmail) ? latestText.latestText : partner.latestChat}
+                        <div className="w-[75%] flex flex-col">
+                          <div className="w-full h-[40%] flex flex-row justify-between pr-3">
+                            <div>{partner.chatPartnerName}</div>
+                            <div className="text-[0.7rem]">
+                              {latestText.sentAt === partner.updatedAt
+                                ? handleDateFormat(latestText.sentAt)
+                                : partner.updatedAt &&
+                                  handleDateFormat(partner.updatedAt)}
+                            </div>
+                          </div>
+                          <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
+                            {latestText.sentBy === partner.chatPartnerEmail
+                              ? latestText.latestText
+                              : partner.latestChat}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })
+                    );
+                  })
                 : "Users you chat with will appear here."}
             </div>
           </div>
           {loadingWindow ? (
             "Loading Chat Window..."
-          ) : currentChat === null && currentChatName === null && !chatWindow ? (
+          ) : currentChat === null &&
+            currentChatName === null &&
+            !chatWindow ? (
             <div className="w-[75%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
               <div className="w-full h-[90%] flex justify-center items-center">
                 <p className="font-bold font-Philosopher">
@@ -696,7 +828,7 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
                           currentChat?.receiverId as number,
                           currentChat?.receiverName as string,
                           currentChat?.receiverEmail as string
-                        )
+                        );
                       }}
                     >
                       <IoSend className="text-[1.5rem]" />
@@ -721,45 +853,50 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
                 "getting all users..."
               ) : (
                 <div className="w-full flex flex-col gap-2">
-                  {users && users.map((user, index) => (
-                    <div
-                      className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
-                      key={index}
-                    >
-                      <div className="w-[20%] flex justify-center items-center">
-                        <div className="w-[60%] bg-slate-200 rounded-full flex justify-center items-center p-3">
-                          <FaUser className="w-7 h-7" />
+                  {users &&
+                    users.map((user, index) => (
+                      <div
+                        className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
+                        key={index}
+                      >
+                        <div className="w-[20%] flex justify-center items-center">
+                          <div className="w-[60%] bg-slate-200 rounded-full flex justify-center items-center p-3">
+                            <FaUser className="w-7 h-7" />
+                          </div>
+                        </div>
+                        <div className="w-[60%] flex flex-col font-Poppins">
+                          <div className="w-full pl-4">
+                            <p className="font-bold">{user.name}</p>
+                          </div>
+                          <div className="w-full pl-4">
+                            <p className="">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="w-[20%] flex justify-center items-center">
+                          <button
+                            type="button"
+                            className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
+                            onClick={() => {
+                              handleChatButtonClick(
+                                Number(user.id),
+                                String(user.name),
+                                user.email
+                              );
+                              insertingChatPartnerInDB(
+                                currentUser?.id as number,
+                                user.id as number,
+                                currentUser?.name as string,
+                                currentUser?.email as string,
+                                user.name as string,
+                                user.email
+                              );
+                            }}
+                          >
+                            Chat
+                          </button>
                         </div>
                       </div>
-                      <div className="w-[60%] flex flex-col font-Poppins">
-                        <div className="w-full pl-4">
-                          <p className="font-bold">{user.name}</p>
-                        </div>
-                        <div className="w-full pl-4">
-                          <p className="">{user.email}</p>
-                        </div>
-                      </div>
-                      <div className="w-[20%] flex justify-center items-center">
-                        <button
-                          type="button"
-                          className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
-                          onClick={() => {
-                            handleChatButtonClick(Number(user.id), String(user.name), user.email);
-                            insertingChatPartnerInDB(
-                              currentUser?.id as number,
-                              user.id as number,
-                              currentUser?.name as string,
-                              currentUser?.email as string,
-                              user.name as string,
-                              user.email
-                            );
-                          }}
-                        >
-                          Chat
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </ModalBody>
@@ -772,6 +909,111 @@ const TextingSection = ({ token, latestText, setLatestText, ws, chatHistory, set
               >
                 Close
               </button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </div>
+
+      {/* modal for creating groups */}
+      <div className="">
+        <Modal isOpen={isOpen} onClose={onClose} isCentered size={"xl"}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>
+              <div className="w-full flex justify-center items-center">
+                You are creating a group
+              </div>
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody className="bg-slate-200">
+              {loading ? (
+                "getting all users..."
+              ) : (
+                <div className="w-full flex flex-row">
+                  <div className="w-[40%] flex flex-col gap-2">
+                    <div className=""></div>
+                    <div className="w-full flex flex-row items-center">
+                      <div className="w-[90%]">
+                        <input
+                          type="text"
+                          name=""
+                          id="name"
+                          className="w-full bg-slate-400 placeholder:text-slate-200 px-2 py-1 rounded-md hover:cursor-pointer"
+                          placeholder="Name"
+                          onChange={(e) => {
+                            setGroupName(e.target.value);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-full flex flex-row items-center">
+                      <div className="w-[90%]">
+                        <input
+                          type="text"
+                          name=""
+                          id="description"
+                          className="w-full bg-slate-400 placeholder:text-slate-200 px-2 py-1 rounded-md hover:cursor-pointer"
+                          placeholder="Description"
+                          onChange={(e) => {
+                            setGroupDescription(e.target.value);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-[60%] flex flex-col gap-2 overflow-y-auto max-h-[16rem]">
+                    {users &&
+                      users.map((user, index) => (
+                        <div
+                          className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
+                          key={index}
+                        >
+                          <div className="w-[60%] flex flex-col font-Poppins">
+                            <div className="w-full pl-4">
+                              <p className="font-bold">{user.name}</p>
+                            </div>
+                          </div>
+                          <div className="w-[40%] flex justify-center items-center">
+                            <button
+                              type="button"
+                              className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
+                              onClick={() => {
+                                usersToAddInTheGroup.push(user);
+                                console.log(
+                                  "Total users to be added till now: ",
+                                  usersToAddInTheGroup.length
+                                );
+                                console.log(
+                                  "Another user added: ",
+                                  usersToAddInTheGroup
+                                );
+                              }}
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </ModalBody>
+
+            <ModalFooter className="bg-slate-200">
+              <div className="w-full flex justify-center">
+                <button
+                  type="button"
+                  className="px-3 py-1 rounded-md hover:cursor-pointer bg-red-400"
+                  onClick={() => {
+                    // handleCreateGroup();
+                    console.log("group name: ", groupName);
+                    console.log("group description: ", groupDescription);
+                    console.log("users to be added: ", usersToAddInTheGroup);
+                  }}
+                >
+                  Create Group
+                </button>
+              </div>
             </ModalFooter>
           </ModalContent>
         </Modal>
