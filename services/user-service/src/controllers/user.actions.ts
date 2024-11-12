@@ -27,6 +27,12 @@ export async function getUsersFromDB(req: Request, res: Response) {
           not: existingUser.email,
         },
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isAuthenticated: true
+      }
     });
     return res.status(200).json({
       success: true,

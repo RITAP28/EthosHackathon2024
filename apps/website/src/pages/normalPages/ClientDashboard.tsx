@@ -20,7 +20,18 @@ import {
   LogoutSuccess,
 } from "../../redux/slices/user.slice";
 import { ChatHistory, latestTextWithUser } from "../../lib/interface";
-
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  Button,
+} from "@chakra-ui/react";
+import { User } from "../../lib/interface";
 
 const ClientDashboard = () => {
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
@@ -29,13 +40,24 @@ const ClientDashboard = () => {
     receivedBy: "",
     sentBy: "",
     latestText: "",
-    sentAt: new Date(0)
+    sentAt: new Date(0),
   });
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const ws = useWebSocket();
   const toast = useToast();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const [usersLoading, setUsersLoading] = useState<boolean>(false);
+  const [users, setUsers] = useState<User[]>([]);
+
+  const [groupCreationLoading, setGroupCreationLoading] = useState<boolean>(false);
+  const [groupName, setGroupName] = useState<string | null>(null);
+  const [groupDescription, setGroupDescription] = useState<string | null>(null);
+
+  const usersToAddInTheGroup: User[] = [];
 
   const getToken = useCallback(
     async (userId: number) => {
@@ -63,7 +85,9 @@ const ClientDashboard = () => {
             "access token refreshed response: ",
             refreshAccessToken.data
           );
-          dispatch(AccessTokenRefreshSuccess(refreshAccessToken.data.accessToken)); // sets the access token in redux or in memory
+          dispatch(
+            AccessTokenRefreshSuccess(refreshAccessToken.data.accessToken)
+          ); // sets the access token in redux or in memory
           await getToken(currentUser?.id as number);
         }
         setToken(getTokenResponse.data.token); // sets the refresh token
@@ -88,7 +112,7 @@ const ClientDashboard = () => {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
-          }
+          },
         }
       );
       console.log("Logout message: ", logoutResponse);
@@ -105,6 +129,47 @@ const ClientDashboard = () => {
     } catch (error) {
       console.error("Error while logging out: ", error);
     }
+  };
+
+  // function for getting users from database
+  const getUserFromDB = async () => {
+    setUsersLoading(true);
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/getusersfromdb?id=${currentUser?.id}`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setUsers(response.data.users);
+    } catch (error) {
+      console.error("Error while getting users from datavbase: ", error);
+    }
+    setUsersLoading(false);
+  };
+
+  const handleCreateGroup = async () => {
+    setGroupCreationLoading(true);
+    try {
+      console.log("Users to create a group with: ", usersToAddInTheGroup);
+      if(ws && ws.OPEN){
+        ws.send(
+          JSON.stringify({
+            action: "create-group",
+            groupName: groupName,
+            description: groupDescription,
+            users: usersToAddInTheGroup
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error while creating a group: ", error);
+    }
+    setGroupCreationLoading(false);
   };
 
   // once the user reaches the main chatting page, he/she is immediately to connected to websockets
@@ -146,15 +211,15 @@ const ClientDashboard = () => {
             duration: 4000,
             isClosable: true,
           });
-        } else if(data.action === "receive-message") {
+        } else if (data.action === "receive-message") {
           setLatestText({
             receivedBy: data.to,
             sentBy: data.from,
             latestText: data.textMetadata,
-            sentAt: data.sentAt
+            sentAt: data.sentAt,
           });
           console.log(`message received successfully from ${data.from}`);
-          console.log('received text: ', latestText);
+          console.log("received text: ", latestText);
           setChatHistory((prevChats) => [
             ...prevChats,
             {
@@ -169,14 +234,14 @@ const ClientDashboard = () => {
             status: "success",
             duration: 4000,
             isClosable: true,
-            position: "top-right"
+            position: "top-right",
           });
-        } else if(data.action === "send-message") {
+        } else if (data.action === "send-message") {
           setLatestText({
             receivedBy: data.to,
             sentBy: data.from,
             latestText: data.textMetadata,
-            sentAt: data.sentAt
+            sentAt: data.sentAt,
           });
         }
       };
@@ -210,12 +275,18 @@ const ClientDashboard = () => {
                 <p className="text-sm text-slate-400">All Chats</p>
               </div>
             </div>
-            <div className="w-full hover:bg-slate-700 py-4 rounded-md hover:cursor-pointer transition duration-200 ease-in-out hover:text-slate-400 text-slate-400">
+            <div
+              className="w-full hover:bg-slate-700 py-4 rounded-md hover:cursor-pointer transition duration-200 ease-in-out hover:text-slate-400 text-slate-400"
+              onClick={() => {
+                onOpen();
+                getUserFromDB();
+              }}
+            >
               <div className="w-full flex justify-center">
                 <MdOutlineWork className="w-7 h-7" />
               </div>
               <div className="w-full flex justify-center">
-                <p className="text-sm text-slate-400">Work</p>
+                <p className="text-sm text-slate-400">Group</p>
               </div>
             </div>
             <div className="w-full hover:bg-slate-700 py-4 rounded-md hover:cursor-pointer transition duration-200 ease-in-out hover:text-slate-400 text-slate-400">
@@ -268,7 +339,14 @@ const ClientDashboard = () => {
             </div>
           </div>
           <div className="w-[94%] min-h-screen z-20">
-            <TextingSection token={token} latestText={latestText} setLatestText={setLatestText} ws={ws} chatHistory={chatHistory} setChatHistory={setChatHistory} />
+            <TextingSection
+              token={token}
+              latestText={latestText}
+              setLatestText={setLatestText}
+              ws={ws}
+              chatHistory={chatHistory}
+              setChatHistory={setChatHistory}
+            />
           </div>
         </>
       ) : (
@@ -276,6 +354,66 @@ const ClientDashboard = () => {
           <p className="">No Websocket instance found</p>
         </div>
       )}
+
+      {/* modal for creating groups */}
+      <div className="">
+        <Modal isOpen={isOpen} onClose={onClose} isCentered size={"lg"}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Modal Title</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              {usersLoading ? (
+                "getting all users..."
+              ) : (
+                <div className="w-full flex flex-col gap-2">
+                  {users &&
+                    users.map((user, index) => (
+                      <div
+                        className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
+                        key={index}
+                      >
+                        <div className="w-[20%] flex justify-center items-center">
+                          <div className="w-[60%] bg-slate-200 rounded-full flex justify-center items-center p-3">
+                            <FaUser className="w-7 h-7" />
+                          </div>
+                        </div>
+                        <div className="w-[60%] flex flex-col font-Poppins">
+                          <div className="w-full pl-4">
+                            <p className="font-bold">{user.name}</p>
+                          </div>
+                          <div className="w-full pl-4">
+                            <p className="">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="w-[20%] flex justify-center items-center">
+                          <button
+                            type="button"
+                            className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
+                            onClick={() => {
+                              usersToAddInTheGroup.push(user);
+                            }}
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </ModalBody>
+
+            <ModalFooter>
+              <div className="w-full flex justify-center">
+                <button type="button" className="px-3 py-1 rounded-md hover:cursor-pointer bg-red-400">
+                  Create Group
+                </button>
+              </div>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </div>
+
       <StarsBackground />
       <ShootingStars minDelay={2000} maxDelay={3000} />
     </div>

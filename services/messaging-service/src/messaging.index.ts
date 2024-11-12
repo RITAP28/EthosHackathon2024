@@ -7,7 +7,9 @@ import {
   accessTokenSecret,
   ExtendedDecodedToken,
   ExtendedWebsocket,
+  Member,
   PORT,
+  User,
 } from "./utils/utils";
 import { prisma } from "../../../db/db";
 import {
@@ -203,6 +205,86 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         );
       }
 
+      // handling the event of creation of a new group
+      if (parsedMessage.action === "create-group") {
+        const groupName = parsedMessage.groupName;
+        const groupDescription = parsedMessage.groupDescription;
+        const usersToAdd: User[] = parsedMessage.users;
+
+        console.log("Group Name: ", groupName);
+        console.log("Group Description: ", groupDescription);
+        console.log("Users to Add: ", usersToAdd);
+
+        // ws.groups.push({
+        //   groupName: groupName,
+        //   groupDescription: groupDescription,
+        // });
+
+        const listOfUsersToBeAdded: Member[] = [];
+
+        // validating each user, their sockets and then adding them into an another array
+        usersToAdd.map((user) => {
+          const targetUserEmail: string = user.email;
+          // see if the user exists in the clients list
+          wss.clients.forEach((client) => {
+            const clientExists = client as ExtendedWebsocket;
+            if (clientExists) {
+              console.log(
+                "one user in the group sent by the client to the server: ",
+                clientExists.user
+              );
+
+              const targetClientSocket = Array.from(wss.clients).find(
+                (client) => {
+                  const clientInGroup = client as ExtendedWebsocket;
+                  if (clientInGroup.user.email === user.email) {
+                    console.log(
+                      "Extended Client User Property in the group: ",
+                      clientInGroup.user
+                    );
+                  }
+                  return clientInGroup.user.email === targetUserEmail;
+                }
+              ) as ExtendedWebsocket | undefined;
+
+              if(!targetClientSocket) {
+                console.log("target client socket to be added in group does not exist");
+              } else if (
+                targetClientSocket === undefined ||
+                targetClientSocket.readyState === 3 ||
+                targetClientSocket.readyState === 2 ||
+                targetClientSocket.readyState === 1
+              ) {
+                console.log(`User with email, ${targetUserEmail}, is offline`);
+              } else {
+                console.log(
+                  "target user group socket email is offline: ",
+                  targetClientSocket?.user.email
+                );
+                listOfUsersToBeAdded.push(targetClientSocket.user);
+              }
+            } else {
+              console.log(
+                "Client exists not true, user not found in the list of clients"
+              );
+            }
+          });
+        });
+
+        const totalMembers = listOfUsersToBeAdded.length;
+        // after validating each user in the list of users which came from parsedMessage or client, we will add the group, with all the data in hand, as a whole
+        await prisma.$transaction(async (tx) => {
+          // create the group with owner
+          const group = await tx.group.create({
+            data: {
+              name: groupName,
+              description: groupDescription,
+              totalMembers: totalMembers,
+            }
+          })
+        })
+      }
+
       // handling messages between the client and the target user account
       if (parsedMessage.action === "send-message") {
         const chatPartnerEmail = parsedMessage.targetEmail as string;
@@ -259,7 +341,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               textMetadata: parsedMessage.message,
               from: ws.user.email,
               to: chatPartnerEmail,
-              sentAt: new Date(Date.now())
+              sentAt: new Date(Date.now()),
             })
           );
 

@@ -26,7 +26,8 @@ model User {
   role            Role      @default(USER)
   createdAt       DateTime  @default(now())
   Session         Session[]
-  Members         Members[]
+  ownedGroups     Group[]
+  memberships     Member[]
 }
 
 model Session {
@@ -65,27 +66,33 @@ model ChatPartners {
 }
 
 model Group {
-  id           Int       @id @unique @default(autoincrement())
+  id           Int      @id @unique @default(autoincrement())
   name         String
   description  String?
-  membersEmail String[]
   totalMembers Int
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now())
-  Members      Members[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+  members      Member[]
+  owner        User?    @relation(fields: [ownerId], references: [id])
+  ownerId      Int?
 
   @@unique([id, name])
 }
 
-model Members {
-  userId    Int
-  name      String
-  email     String
-  groupId   Int
-  groupName String
-  groupRole GroupRole @default(MEMBER)
-  group     Group     @relation(references: [id, name], fields: [groupId, groupName], onDelete: Cascade)
-  user      User      @relation(references: [id], fields: [userId], onDelete: Cascade)
+model Member {
+  id       Int       @id @default(autoincrement())
+  name     String
+  email    String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  // User relationship
+  user   User @relation(references: [id], fields: [userId], onDelete: Cascade)
+  userId Int
+
+  // Group relationship
+  Group   Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId Int?
 
   @@unique([userId, groupId])
 }
