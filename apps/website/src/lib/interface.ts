@@ -39,3 +39,12 @@ export interface latestTextWithUser {
     latestText: string;
     sentAt: Date;
   };
+
+export interface Group {
+    id: number;
+    name: string;
+    description?: string;
+    totalMembers: number;
+    createdAt: Date;
+    ownerId: number;
+}

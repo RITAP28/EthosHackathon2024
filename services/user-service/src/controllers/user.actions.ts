@@ -248,3 +248,25 @@ export async function getLatestMessageBetweenUsers(senderEmail: string, receiver
     console.error("Error while getting latest message: ", error);
   };
 };
+
+export async function getGroupsForUser(req: Request, res: Response){
+  try {
+    const { id } = req.query;
+    const groups = await prisma.member.findMany({
+      where: {
+        userId: Number(id),
+      }
+    });
+    return res.status(200).json({
+      success: true,
+      msg: `All groups found successfully in which the user with id, ${id} is either an admin or member`,
+      groups: groups
+    });
+  } catch (error) {
+    console.error('Error while getting groups for user: ', error);
+    return res.status(200).json({
+      success: false,
+      msg: 'Groups not found'
+    });
+  };
+};

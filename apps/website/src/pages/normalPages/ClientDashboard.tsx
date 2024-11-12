@@ -19,7 +19,7 @@ import {
   AccessTokenRefreshSuccess,
   LogoutSuccess,
 } from "../../redux/slices/user.slice";
-import { ChatHistory, latestTextWithUser } from "../../lib/interface";
+import { ChatHistory, Group, latestTextWithUser } from "../../lib/interface";
 
 const ClientDashboard = () => {
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
@@ -39,6 +39,8 @@ const ClientDashboard = () => {
   const [displayIndividualChats, setDisplayIndividualChats] =
     useState<boolean>(true);
   const [displayGroups, setDisplayGroups] = useState<boolean>(false);
+  const [loadingGroups, setLoadingGroups] = useState<boolean>(false);
+  const [groups, setGroups] = useState<Group[]>([]);
 
   const getToken = useCallback(
     async (userId: number) => {
@@ -110,6 +112,30 @@ const ClientDashboard = () => {
     } catch (error) {
       console.error("Error while logging out: ", error);
     }
+  };
+
+  const handleGetGroups = async () => {
+    setLoadingGroups(true);
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/get/groups?id=${currentUser?.id}`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("Response for getting groups: ", response.data);
+      setGroups(response.data.groups);
+    } catch (error) {
+      console.error(
+        `Error while fetching groups for ${currentUser?.name}: `,
+        error
+      );
+    }
+    setLoadingGroups(false);
   };
 
   // once the user reaches the main chatting page, he/she is immediately to connected to websockets
@@ -226,6 +252,7 @@ const ClientDashboard = () => {
               onClick={() => {
                 setDisplayGroups(true);
                 setDisplayIndividualChats(false);
+                handleGetGroups();
               }}
             >
               <div className="w-full flex justify-center">
@@ -293,9 +320,11 @@ const ClientDashboard = () => {
               chatHistory={chatHistory}
               setChatHistory={setChatHistory}
               displayGroups={displayGroups}
-              setDisplayGroups={setDisplayGroups}
+              // setDisplayGroups={setDisplayGroups}
               displayIndividualChats={displayIndividualChats}
-              setDisplayIndividualChats={setDisplayIndividualChats}
+              // setDisplayIndividualChats={setDisplayIndividualChats}
+              groups={groups}
+              loadingGroups={loadingGroups}
             />
           </div>
         </>
