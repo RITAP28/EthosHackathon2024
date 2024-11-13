@@ -54,6 +54,8 @@ export interface Member {
   email: string;
   role?: GroupRole;
   joinedAt?: Date;
+  userId: number;
+  groupId: number;
 }
 
 export interface Groups {
@@ -69,7 +71,7 @@ export interface Groups {
 export interface ExtendedWebsocket extends WebSocket {
   user: ExtendedDecodedToken;
   chatPartner: ExtendedWebsocket;
-  groups: Groups[]
+  groups: Groups
 }
 
 export const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;

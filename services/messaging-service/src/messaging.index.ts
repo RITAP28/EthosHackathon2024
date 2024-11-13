@@ -7,6 +7,7 @@ import {
   accessTokenSecret,
   ExtendedDecodedToken,
   ExtendedWebsocket,
+  Groups,
   Member,
   PORT,
   User,
@@ -497,6 +498,39 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           })
         );
         console.log(`Received message from ${senderEmail}`);
+      }
+
+      // for actions regarding groups
+      if(parsedMessage.action === "start-group-chat") {
+        const targetGroup: Groups = parsedMessage.targetGroup;
+        console.log("target group: ", targetGroup);
+
+        ws.groups = targetGroup;
+
+        const groupMembers = targetGroup.members as Member[];
+        console.log("Group Members: ", groupMembers);
+
+        const onlineGroupMembers = [];
+        const offlineGroupMembers = [];
+
+        groupMembers.forEach((member) => {
+          const isOnlineGroupMember = Array.from(wss.clients).forEach((x) => {
+            const extendedClient = x as ExtendedWebsocket;
+            if(extendedClient.user.email === member.email) {
+              console.log("extended client user property: ", extendedClient.user);
+            };
+            return extendedClient.user.email === member.email;
+          }) as ExtendedWebsocket | undefined;
+
+          if(!isOnlineGroupMember || isOnlineGroupMember === undefined) {
+            console.log(`${member.name} is offline.`);
+            offlineGroupMembers.push(member);
+          } else if(isOnlineGroupMember && isOnlineGroupMember.readyState === 2) {
+            console.log(`${isOnlineGroupMember.user.name} is online now.`);
+            console.log(`Info regarding ${isOnlineGroupMember.user.name}: `, isOnlineGroupMember.user);
+            onlineGroupMembers.push(member);
+          }
+        })
       }
     } catch (error) {
       console.error("Websocker error: ", error);
