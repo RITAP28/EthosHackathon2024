@@ -302,3 +302,15 @@ export async function createAndUpdateChatPartnersData(sender: Sender, receiver: 
     console.error('Error while creating or updating the chat partner: ', error);
   }
 }
+
+export async function getGroupChatHistory(groupId: number) {
+  try {
+    const chatHistory = await prisma.groupChat.findMany({
+      where: {
+        groupId: groupId
+      }
+    });
+  } catch (error) {
+    console.error(`Error while fetching the chat history of the group with id ${groupId}: `, error);
+  };
+};

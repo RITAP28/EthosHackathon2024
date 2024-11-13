@@ -45,6 +45,29 @@ export interface Group {
     name: string;
     description?: string;
     totalMembers: number;
+    members: Members[];
     createdAt: Date;
     ownerId: number;
+}
+
+export interface Members {
+    id: number;
+    name: string;
+    email: string;
+    role: "ADMIN" | "MEMBER";
+    joinedAt: Date;
+    userId: number;
+    groupId: number;
+}
+
+export interface GroupChatHistory {
+    id: number;
+    groupId: number;
+    groupName: string;
+    senderId: number;
+    senderName: string;
+    senderEmail: string;
+    textMetadata: string;
+    sentAt: Date;
+    isDelivered: boolean;
 }

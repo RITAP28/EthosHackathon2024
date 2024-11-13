@@ -15,6 +15,7 @@ import {
   ChatPartner,
   CurrentChat,
   Group,
+  GroupChatHistory,
   latestTextWithUser,
   User,
 } from "../lib/interface";
@@ -36,9 +37,7 @@ const TextingSection = ({
   chatHistory,
   setChatHistory,
   displayGroups,
-  // setDisplayGroups,
   displayIndividualChats,
-  // setDisplayIndividualChats,
   groups,
   loadingGroups,
 }: {
@@ -49,9 +48,7 @@ const TextingSection = ({
   chatHistory: ChatHistory[];
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
   displayGroups: boolean;
-  // setDisplayGroups: React.Dispatch<React.SetStateAction<boolean>>;
   displayIndividualChats: boolean;
-  // setDisplayIndividualChats: React.Dispatch<React.SetStateAction<boolean>>;
   groups: Group[];
   loadingGroups: boolean;
 }) => {
@@ -68,11 +65,20 @@ const TextingSection = ({
     null
   );
 
+  // states for displaying chat/group windows
+  const [loadingWindow, setLoadingWindow] = useState<boolean>(false);
+  const [chatWindow, setChatWindow] = useState<boolean>(false);
+  const [groupWindow, setGroupWindow] = useState<boolean | null>(null);
+
   // states for texting window
   const [currentChat, setCurrentChat] = useState<CurrentChat | null>(null);
   const [currentChatName, setCurrentChatName] = useState<string | null>(null);
-  const [chatWindow, setChatWindow] = useState<boolean>(false);
-  const [loadingWindow, setLoadingWindow] = useState<boolean>(false);
+
+  // states for group window
+  const [groupChat, setGroupChat] = useState<Group | null>(null);
+  const [groupChatHistory, setGroupChatHistory] = useState<GroupChatHistory[]>(
+    []
+  );
 
   // states for chat partners
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
@@ -85,8 +91,7 @@ const TextingSection = ({
   const toast = useToast();
 
   // const [loadingGroups, setLoadingGroups] = useState<boolean>(false);
-  const [groupCreationLoading, setGroupCreationLoading] =
-    useState<boolean>(false);
+  const [, setGroupCreationLoading] = useState<boolean>(false);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [groupDescription, setGroupDescription] = useState<string | null>(null);
 
@@ -690,6 +695,16 @@ const TextingSection = ({
     }
   };
 
+  const handleClickOnAnyGroup = async (group: Group) => {
+    try {
+      setGroupWindow(true);
+      setChatWindow(false);
+      setGroupChat(group);
+    } catch (error) {
+      console.error("Error while clicking on any group: ", error);
+    }
+  };
+
   return (
     <div className="w-full flex justify-start items-center h-[100%]">
       <div className="w-[99%] h-[97%] bg-slate-300 rounded-2xl">
@@ -721,6 +736,7 @@ const TextingSection = ({
                           className="w-[90%] bg-slate-400 flex flex-row py-2 rounded-xl hover:bg-slate-500 hover:cursor-pointer transition ease-in-out duration-200"
                           key={index}
                           onClick={() => {
+                            setGroupWindow(false);
                             handleChatButtonClick(
                               partner.chatPartnerId,
                               partner.chatPartnerName,
@@ -780,6 +796,7 @@ const TextingSection = ({
                             key={index}
                             onClick={() => {
                               console.log("Group Details: ", group);
+                              handleClickOnAnyGroup(group);
                             }}
                           >
                             <div className="">{group.name}</div>
@@ -797,26 +814,26 @@ const TextingSection = ({
                 ))}
             </div>
           </div>
-          {loadingWindow ? (
-            "Loading Chat Window..."
-          ) : currentChat === null &&
-            currentChatName === null &&
-            !chatWindow ? (
-            <div className="w-[75%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
-              <div className="w-full h-[90%] flex justify-center items-center">
-                <p className="font-bold font-Philosopher">
-                  This is your alternative to the <br /> Boring Whats-App you
-                  have been using!
-                </p>
-              </div>
-              <div className="w-full h-[10%] flex justify-center">
-                <p className="flex items-center gap-2 font-semibold font-Philosopher">
-                  <CiLock />
-                  Your personal messages are end-to-end encrypted
-                </p>
-              </div>
-            </div>
-          ) : (
+          {loadingWindow
+            ? "Loading Chat Window..."
+            : !chatWindow &&
+              !groupWindow && (
+                <div className="w-[75%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
+                  <div className="w-full h-[90%] flex justify-center items-center">
+                    <p className="font-bold font-Philosopher">
+                      This is your alternative to the <br /> Boring Whats-App
+                      you have been using!
+                    </p>
+                  </div>
+                  <div className="w-full h-[10%] flex justify-center">
+                    <p className="flex items-center gap-2 font-semibold font-Philosopher">
+                      <CiLock />
+                      Your personal messages are end-to-end encrypted
+                    </p>
+                  </div>
+                </div>
+              )}
+          {chatWindow && currentChat !== null && currentChatName !== null && (
             <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between">
               {/* upper bar containing the name of the receiver */}
               <div className="w-full h-[10%] flex flex-row bg-slate-500 rounded-tr-2xl">
@@ -847,6 +864,105 @@ const TextingSection = ({
                 {loadingChatHistory
                   ? "Loading your chats, please wait..."
                   : chatHistory.map((chat, index) =>
+                      chat.senderEmail === currentUser?.email ? (
+                        <div className="flex justify-end pt-2" key={index}>
+                          <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
+                            <div className="w-full">
+                              <p className="text-white">{chat.textMetadata}</p>
+                            </div>
+                            <div className="w-full flex justify-end text-[0.7rem]">
+                              {handleDateFormat(chat.sentAt)}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-start pt-2" key={index}>
+                          <div className="p-3 bg-blue-500 rounded-lg max-w-[70%] flex flex-col">
+                            <div className="w-full">
+                              <p className="text-white">{chat.textMetadata}</p>
+                            </div>
+                            <div className="w-full flex justify-end text-[0.7rem]">
+                              {handleDateFormat(chat.sentAt)}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    )}
+              </div>
+              {/* lower bar containing the text input for sending the texts */}
+              <div className="w-full bg-slate-500 flex flex-row h-[3.5rem]">
+                <div className="w-[5%] flex justify-center items-center">
+                  <GoPaperclip className="text-[1.5rem]" />
+                </div>
+                <div className="w-[80%] flex justify-start items-center">
+                  <div className="w-[90%]">
+                    <input
+                      type="text"
+                      name=""
+                      id=""
+                      className="w-full px-3 py-2 h-[2rem] bg-slate-200 font-Poppins rounded-lg"
+                      placeholder="Your Message"
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        e.preventDefault();
+                        setTextMessage(e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="w-[15%] flex flex-row">
+                  <div className="basis-1/2 flex justify-center items-center">
+                    <div className="p-3 bg-slate-600 rounded-full hover:cursor-pointer hover:bg-red-400">
+                      <MdKeyboardVoice className="text-[1.5rem]" />
+                    </div>
+                  </div>
+                  <div className="basis-1/2 flex justify-center items-center">
+                    <div
+                      className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full"
+                      onClick={() => {
+                        handleSendButtonClick(
+                          currentChat?.receiverId as number,
+                          currentChat?.receiverName as string,
+                          currentChat?.receiverEmail as string
+                        );
+                      }}
+                    >
+                      <IoSend className="text-[1.5rem]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {groupWindow && groupChat && (
+            <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between">
+              <div className="w-full h-[10%] flex flex-row bg-slate-500 rounded-tr-2xl">
+                <div className="w-[10%] flex justify-center items-center">
+                  <div className="p-3 bg-slate-400 rounded-xl">
+                    <FaUser className="text-[2rem]" />
+                  </div>
+                </div>
+                <div className="w-[60%] flex justify-start items-center">
+                  <p className="text-xl font-Philosopher font-semibold">
+                    {groupChat.name}
+                  </p>
+                </div>
+                <div className="w-[30%] flex flex-row justify-end items-center gap-4 pr-4">
+                  <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
+                    <FcVideoCall className="text-[2rem]" />
+                  </div>
+                  <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
+                    <CiMenuKebab className="text-[1.8rem]" />
+                  </div>
+                </div>
+              </div>
+              {/* space for texts to appear */}
+              <div
+                className="w-full h-[80%] flex-col-reverse overflow-y-auto p-4 bg-slate-400"
+                id="message-container"
+              >
+                {loadingChatHistory
+                  ? "Loading your chats, please wait..."
+                  : groupChatHistory.map((chat, index) =>
                       chat.senderEmail === currentUser?.email ? (
                         <div className="flex justify-end pt-2" key={index}>
                           <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
