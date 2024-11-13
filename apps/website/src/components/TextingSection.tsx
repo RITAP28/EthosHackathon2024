@@ -582,6 +582,7 @@ const TextingSection = ({
           JSON.stringify({
             action: "create-group",
             groupName: groupName,
+            // groupDescription giving undefined
             description: groupDescription,
             users: usersToAddInTheGroup,
           })
@@ -679,7 +680,7 @@ const TextingSection = ({
           usersToAddInTheGroup.length
         );
         console.log("Another user added: ", usersToAddInTheGroup);
-      } else if(isAdded) {
+      } else if (isAdded) {
         setIsAdded(false);
         console.log(`${user.name} has been removed from the users list`);
         console.log("Another user removed: ", usersToAddInTheGroup);
@@ -765,17 +766,26 @@ const TextingSection = ({
                           setCreateGroupModal(true);
                           setSearchUsersLoading(false);
                           onOpen();
+                          getUsersFromDB();
                         }}
                       >
                         Create group
                       </button>
                     </div>
                     {groups.length > 0 ? (
-                      groups.map((group, index) => (
-                        <div className="w-full" key={index}>
-                          <div className="">{group.name}</div>
-                        </div>
-                      ))
+                      <div className="w-full flex flex-col gap-2 items-center pt-3">
+                        {groups.map((group, index) => (
+                          <div
+                            className="w-[90%] bg-slate-200 rounded-md px-2 py-2 hover:cursor-pointer transition duration-150 ease-in-out hover:bg-gray-400 font-Philosopher font-bold"
+                            key={index}
+                            onClick={() => {
+                              console.log("Group Details: ", group);
+                            }}
+                          >
+                            <div className="">{group.name}</div>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <div className="w-full flex justify-center">
                         <div className="w-[80%]">

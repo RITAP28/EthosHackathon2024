@@ -220,6 +220,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         // validating each user, their sockets and then adding them into an another array
         usersToAdd.map(async (user) => {
           const targetUserEmail: string = user.email;
+          console.log("targetUserEmail: ", targetUserEmail);
           const existingUser = await prisma.user.findUnique({
             where: {
               email: targetUserEmail,
@@ -227,6 +228,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           });
           // see if the user exists in the clients list
           if (!existingUser) {
+            console.log(`${targetUserEmail} does not exist`);
             ws.send(
               JSON.stringify({
                 message: `User with ${targetUserEmail} does not exist`,
@@ -234,88 +236,89 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               })
             );
           } else {
-            wss.clients.forEach((client) => {
-              const clientExists = client as ExtendedWebsocket;
-              if (clientExists) {
-                console.log(
-                  "one user in the group sent by the client to the server: ",
-                  clientExists.user
-                );
+            console.log("Existing user name: ", existingUser.name);
+            // wss.clients.forEach((client) => {
+            //   const clientExists = client as ExtendedWebsocket;
+            //   if (clientExists) {
+            //     console.log(
+            //       "one user in the group sent by the client to the server: ",
+            //       clientExists.user
+            //     );
 
-                const targetClientSocket = Array.from(wss.clients).find(
-                  (client) => {
-                    const clientInGroup = client as ExtendedWebsocket;
-                    if (clientInGroup.user.email === user.email) {
-                      console.log(
-                        "Extended Client User Property in the group: ",
-                        clientInGroup.user
-                      );
-                    }
-                    return clientInGroup.user.email === targetUserEmail;
-                  }
-                ) as ExtendedWebsocket | undefined;
+            //     const targetClientSocket = Array.from(wss.clients).find(
+            //       (client) => {
+            //         const clientInGroup = client as ExtendedWebsocket;
+            //         if (clientInGroup.user.email === user.email) {
+            //           console.log(
+            //             "Extended Client User Property in the group: ",
+            //             clientInGroup.user
+            //           );
+            //         }
+            //         return clientInGroup.user.email === targetUserEmail;
+            //       }
+            //     ) as ExtendedWebsocket | undefined;
 
-                if (!targetClientSocket) {
-                  console.log(
-                    "target client socket to be added in group does not exist"
-                  );
-                  ws.send(
-                    JSON.stringify({
-                      message: `Target client socket to be added in group does not exist`,
-                      status: "Target Client does not exist",
-                    })
-                  );
-                } else if (
-                  targetClientSocket &&
-                  targetClientSocket.readyState === 1
-                ) {
-                  listOfUsersToBeAdded.push(targetClientSocket.user);
-                  console.log(
-                    `${targetUserEmail} is online and added to the group ${groupName} successfully`
-                  );
-                  ws.send(
-                    JSON.stringify({
-                      message: `${targetUserEmail} is online and has been added`,
-                      status: "success",
-                    })
-                  );
-                  // sending the data to the client
-                  targetClientSocket.send(
-                    JSON.stringify({
-                      action: "joined-group",
-                      message: `You joined the group ${groupName} created by ${ws.user.name}`
-                    })
-                  );
-                } else {
-                  listOfUsersToBeAdded.push(targetClientSocket.user);
-                  console.log(
-                    "target user group socket email is offline: ",
-                    targetClientSocket?.user.email
-                  );
-                  ws.send(
-                    JSON.stringify({
-                      message: `${targetUserEmail} is offline as it's socket is closed`,
-                      status: "success",
-                    })
-                  );
-                }
-              } else {
-                listOfUsersToBeAdded.push(user);
-                console.log(
-                  "Client is offline, meaning that he/she is not connected to websocket"
-                );
-                ws.send(
-                  JSON.stringify({
-                    message: "Client not connected to websocket",
-                    status: "",
-                  })
-                );
-              }
-            });
+            //     if (!targetClientSocket) {
+            //       console.log(
+            //         "target client socket to be added in group does not exist"
+            //       );
+            //       ws.send(
+            //         JSON.stringify({
+            //           message: `Target client socket to be added in group does not exist`,
+            //           status: "Target Client does not exist",
+            //         })
+            //       );
+            //     } else if (
+            //       targetClientSocket &&
+            //       targetClientSocket.readyState === 1
+            //     ) {
+            //       listOfUsersToBeAdded.push(targetClientSocket.user);
+            //       console.log(
+            //         `${targetUserEmail} is online and added to the group ${groupName} successfully`
+            //       );
+            //       ws.send(
+            //         JSON.stringify({
+            //           message: `${targetUserEmail} is online and has been added`,
+            //           status: "success",
+            //         })
+            //       );
+            //       // sending the data to the client
+            //       targetClientSocket.send(
+            //         JSON.stringify({
+            //           action: "joined-group",
+            //           message: `You joined the group ${groupName} created by ${ws.user.name}`
+            //         })
+            //       );
+            //     } else {
+            //       listOfUsersToBeAdded.push(targetClientSocket.user);
+            //       console.log(
+            //         "target user group socket email is offline: ",
+            //         targetClientSocket?.user.email
+            //       );
+            //       ws.send(
+            //         JSON.stringify({
+            //           message: `${targetUserEmail} is offline as it's socket is closed`,
+            //           status: "success",
+            //         })
+            //       );
+            //     }
+            //   } else {
+            //     listOfUsersToBeAdded.push(user);
+            //     console.log(
+            //       "Client is offline, meaning that he/she is not connected to websocket"
+            //     );
+            //     ws.send(
+            //       JSON.stringify({
+            //         message: "Client not connected to websocket",
+            //         status: "",
+            //       })
+            //     );
+            //   }
+            // });
           }
         });
 
-        const totalMembers = listOfUsersToBeAdded.length + 1;
+        const totalMembers = usersToAdd.length + 1;
         const ownerId = ws.user.id;
         // after validating each user in the list of users which came from parsedMessage or client, we will add the group, with all the data in hand, as a whole
         await prisma.$transaction(async (tx) => {
@@ -340,9 +343,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             },
           });
 
-          if (listOfUsersToBeAdded.length > 0) {
+          if (usersToAdd.length > 0) {
             await tx.member.createMany({
-              data: listOfUsersToBeAdded.map((user) => ({
+              data: usersToAdd.map((user) => ({
                 userId: user.id,
                 groupId: group.id,
                 name: user.name,
@@ -361,7 +364,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             });
           }
         });
-
+        console.log("List of userd to be added: ", listOfUsersToBeAdded);
         console.log(
           `Group with name ${groupName}, having admin ${ws.user.name}, has been created successfully`
         );

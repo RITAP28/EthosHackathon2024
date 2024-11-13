@@ -252,15 +252,22 @@ export async function getLatestMessageBetweenUsers(senderEmail: string, receiver
 export async function getGroupsForUser(req: Request, res: Response){
   try {
     const { id } = req.query;
-    const groups = await prisma.group.findMany({
+    const allGroups = await prisma.group.findMany({
       where: {
-        ownerId: Number(id),
+        members: {
+          some: {
+            userId: Number(id)
+          }
+        }
+      },
+      include: {
+        members: true
       }
     });
     return res.status(200).json({
       success: true,
       msg: `All groups found successfully in which the user with id, ${id} is either an admin or member`,
-      groups: groups
+      groups: allGroups
     });
   } catch (error) {
     console.error('Error while getting groups for user: ', error);
