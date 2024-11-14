@@ -17,6 +17,7 @@ import {
   addChatsToDatabase,
   createAndUpdateChatPartnersData,
   getUndeliveredMessages,
+  getUserByEmail,
 } from "./controller/chat.controller";
 
 dotenv.config();
@@ -104,29 +105,57 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         }
       }
 
-      // for getting all the messages sent by others to this user while the socket connection was not established
-      const undeliveredMessages = await getUndeliveredMessages(ws.user.email);
-      if (undeliveredMessages && undeliveredMessages.length > 0) {
-        for (const message of undeliveredMessages) {
-          ws.send(
-            JSON.stringify({
-              action: "receive-message",
-              textMetadata: message.textMetadata,
-              from: message.senderEmail,
-              to: message.receiverEmail,
-            })
-          );
+      // // for getting all the messages sent by others to this user while the socket connection was not established
+      // const undeliveredMessages = await getUndeliveredMessages(ws.user.email);
+      // if (undeliveredMessages && undeliveredMessages.length > 0) {
+      //   for (const message of undeliveredMessages) {
+      //     ws.send(
+      //       JSON.stringify({
+      //         action: "receive-message",
+      //         textMetadata: message.textMetadata,
+      //         from: message.senderEmail,
+      //         to: message.receiverEmail,
+      //       })
+      //     );
 
-          await prisma.chat.update({
-            where: {
-              chatId: message.chatId,
-            },
-            data: {
-              receivedAt: new Date(Date.now()),
-              isDelivered: true,
-            },
-          });
+      //     await prisma.chat.update({
+      //       where: {
+      //         chatId: message.chatId,
+      //       },
+      //       data: {
+      //         receivedAt: new Date(Date.now()),
+      //         isDelivered: true,
+      //       },
+      //     });
+      //   }
+      // }
+
+      const undeliveredNotifications = await prisma.notifications.findMany({
+        where: {
+          receiverId: ws.user.id
         }
+      });
+      if(undeliveredNotifications && undeliveredNotifications.length > 0){
+        undeliveredNotifications.forEach(async (notification) => {
+          if(notification.notificationType === "receive-message"){
+            ws.send(
+              JSON.stringify({
+                action: "receive-message",
+                textMetadata: notification.message,
+                from: notification.senderEmail,
+                to: notification.receiverEmail
+              })
+            );
+            await prisma.notifications.update({
+              where: {
+                id: notification.id
+              },
+              data: {
+                isRead: true
+              }
+            })
+          }
+        })
       }
 
       // then, you can send anything. like here, after verifying token, we then send a request to start the chat section
@@ -453,6 +482,19 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               receivedAt: null,
               isDelivered: false,
             },
+          });
+          const offlineTargetUser = await getUserByEmail(chatPartnerEmail);
+          await prisma.notifications.create({
+            data: {
+              receiverId: Number(offlineTargetUser?.id),
+              receiverEmail: String(offlineTargetUser?.email),
+              senderEmail: String(ws.user.email),
+              title: `You have one unread text message from ${ws.user.name}`,
+              message: `${parsedMessage.message}`,
+              createdAt: new Date(Date.now()),
+              isRead: false,
+              notificationType: "receive-message"
+            }
           });
           await createAndUpdateChatPartnersData(
             ws.user, // sender = defined

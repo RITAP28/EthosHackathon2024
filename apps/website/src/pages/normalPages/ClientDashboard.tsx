@@ -129,6 +129,13 @@ const ClientDashboard = () => {
       );
       console.log("Response for getting groups: ", response.data);
       setGroups(response.data.groups);
+      toast({
+        title: "Groups fetched successfully",
+        status: "success",
+        isClosable: true,
+        position: "top-right",
+        duration: 4000
+      });
     } catch (error) {
       console.error(
         `Error while fetching groups for ${currentUser?.name}: `,

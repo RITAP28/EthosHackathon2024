@@ -19,6 +19,19 @@ export async function getUsersFromDatabase(email: string) {
   }
 }
 
+export async function getUserByEmail(email: string){
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email
+      }
+    });
+    return user;
+  } catch (error) {
+    console.error("Error while fetching user by email: ", error);
+  };
+};
+
 export async function findUserSocket(email: string) {
   try {
     Array.from(wss.clients).find((client) => {

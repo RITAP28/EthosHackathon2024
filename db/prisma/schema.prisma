@@ -108,3 +108,17 @@ model GroupChat {
   sentAt       DateTime @default(now())
   isDelivered  Boolean  @default(false)
 }
+
+model Notifications {
+  id               Int      @id @unique @default(autoincrement())
+  receiverId       Int
+  receiverEmail    String
+  senderEmail      String
+  title            String
+  message          String
+  createdAt        DateTime @default(now())
+  isRead           Boolean  @default(false)
+  notificationType String
+
+  @@unique([receiverEmail, senderEmail])
+}
