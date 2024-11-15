@@ -120,5 +120,5 @@ model Notifications {
   isRead           Boolean  @default(false)
   notificationType String
 
-  @@unique([receiverEmail, senderEmail])
+  @@unique([receiverEmail, senderEmail, id])
 }

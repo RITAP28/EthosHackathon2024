@@ -54,8 +54,8 @@ export interface Member {
   email: string;
   role?: GroupRole;
   joinedAt?: Date;
-  userId: number;
-  groupId: number;
+  userId?: number;
+  groupId?: number;
 }
 
 export interface Groups {

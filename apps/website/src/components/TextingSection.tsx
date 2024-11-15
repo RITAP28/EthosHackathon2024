@@ -560,6 +560,15 @@ const TextingSection = ({
             isClosable: true,
             position: "top-right",
           });
+        } else if (data.action === "joined-group") {
+          toast({
+            title: data.title,
+            status: "success",
+            description: data.message,
+            isClosable: true,
+            position: "top-right",
+            duration: 400
+          });
         }
       };
     }

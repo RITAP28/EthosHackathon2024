@@ -132,30 +132,46 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
 
       const undeliveredNotifications = await prisma.notifications.findMany({
         where: {
-          receiverId: ws.user.id
-        }
+          receiverId: ws.user.id,
+        },
       });
-      if(undeliveredNotifications && undeliveredNotifications.length > 0){
+      if (undeliveredNotifications && undeliveredNotifications.length > 0) {
         undeliveredNotifications.forEach(async (notification) => {
-          if(notification.notificationType === "receive-message"){
+          if (notification.notificationType === "receive-message") {
             ws.send(
               JSON.stringify({
                 action: "receive-message",
                 textMetadata: notification.message,
                 from: notification.senderEmail,
-                to: notification.receiverEmail
+                to: notification.receiverEmail,
               })
             );
             await prisma.notifications.update({
               where: {
-                id: notification.id
+                id: notification.id,
+              },
+              data: {
+                isRead: true,
+              },
+            });
+          } else if (notification.notificationType === "joined-group") {
+            ws.send(
+              JSON.stringify({
+                action: "joined-group",
+                title: notification.title,
+                message: notification.message
+              })
+            );
+            await prisma.notifications.update({
+              where: {
+                id: notification.id,
               },
               data: {
                 isRead: true
               }
-            })
-          }
-        })
+            });
+          };
+        });
       }
 
       // then, you can send anything. like here, after verifying token, we then send a request to start the chat section
@@ -247,107 +263,6 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
 
         const listOfUsersToBeAdded: Member[] = [];
 
-        // validating each user, their sockets and then adding them into an another array
-        usersToAdd.map(async (user) => {
-          const targetUserEmail: string = user.email;
-          console.log("targetUserEmail: ", targetUserEmail);
-          const existingUser = await prisma.user.findUnique({
-            where: {
-              email: targetUserEmail,
-            },
-          });
-          // see if the user exists in the clients list
-          if (!existingUser) {
-            console.log(`${targetUserEmail} does not exist`);
-            ws.send(
-              JSON.stringify({
-                message: `User with ${targetUserEmail} does not exist`,
-                status: "failure",
-              })
-            );
-          } else {
-            console.log("Existing user name: ", existingUser.name);
-            // wss.clients.forEach((client) => {
-            //   const clientExists = client as ExtendedWebsocket;
-            //   if (clientExists) {
-            //     console.log(
-            //       "one user in the group sent by the client to the server: ",
-            //       clientExists.user
-            //     );
-
-            //     const targetClientSocket = Array.from(wss.clients).find(
-            //       (client) => {
-            //         const clientInGroup = client as ExtendedWebsocket;
-            //         if (clientInGroup.user.email === user.email) {
-            //           console.log(
-            //             "Extended Client User Property in the group: ",
-            //             clientInGroup.user
-            //           );
-            //         }
-            //         return clientInGroup.user.email === targetUserEmail;
-            //       }
-            //     ) as ExtendedWebsocket | undefined;
-
-            //     if (!targetClientSocket) {
-            //       console.log(
-            //         "target client socket to be added in group does not exist"
-            //       );
-            //       ws.send(
-            //         JSON.stringify({
-            //           message: `Target client socket to be added in group does not exist`,
-            //           status: "Target Client does not exist",
-            //         })
-            //       );
-            //     } else if (
-            //       targetClientSocket &&
-            //       targetClientSocket.readyState === 1
-            //     ) {
-            //       listOfUsersToBeAdded.push(targetClientSocket.user);
-            //       console.log(
-            //         `${targetUserEmail} is online and added to the group ${groupName} successfully`
-            //       );
-            //       ws.send(
-            //         JSON.stringify({
-            //           message: `${targetUserEmail} is online and has been added`,
-            //           status: "success",
-            //         })
-            //       );
-            //       // sending the data to the client
-            //       targetClientSocket.send(
-            //         JSON.stringify({
-            //           action: "joined-group",
-            //           message: `You joined the group ${groupName} created by ${ws.user.name}`
-            //         })
-            //       );
-            //     } else {
-            //       listOfUsersToBeAdded.push(targetClientSocket.user);
-            //       console.log(
-            //         "target user group socket email is offline: ",
-            //         targetClientSocket?.user.email
-            //       );
-            //       ws.send(
-            //         JSON.stringify({
-            //           message: `${targetUserEmail} is offline as it's socket is closed`,
-            //           status: "success",
-            //         })
-            //       );
-            //     }
-            //   } else {
-            //     listOfUsersToBeAdded.push(user);
-            //     console.log(
-            //       "Client is offline, meaning that he/she is not connected to websocket"
-            //     );
-            //     ws.send(
-            //       JSON.stringify({
-            //         message: "Client not connected to websocket",
-            //         status: "",
-            //       })
-            //     );
-            //   }
-            // });
-          }
-        });
-
         const totalMembers = usersToAdd.length + 1;
         const ownerId = ws.user.id;
         // after validating each user in the list of users which came from parsedMessage or client, we will add the group, with all the data in hand, as a whole
@@ -404,6 +319,119 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             status: "success",
           })
         );
+
+        // notifying all the users in the group about the new group
+        usersToAdd.map(async (user) => {
+          const targetUserEmail: string = user.email;
+          console.log("targetUserEmail: ", targetUserEmail);
+          const existingUser = await prisma.user.findUnique({
+            where: {
+              email: targetUserEmail,
+            },
+          });
+          // see if the user exists in the clients list
+          if (!existingUser) {
+            console.log(`${targetUserEmail} does not exist`);
+            ws.send(
+              JSON.stringify({
+                message: `User with ${targetUserEmail} does not exist`,
+                status: "failure",
+              })
+            );
+          } else {
+            console.log("Existing user name: ", existingUser.name);
+            wss.clients.forEach(async (client) => {
+              const clientExists = client as ExtendedWebsocket;
+              if (clientExists) {
+                console.log(
+                  "one user in the group sent by the client to the server: ",
+                  clientExists.user
+                );
+
+                const targetClientSocket = Array.from(wss.clients).find(
+                  (client) => {
+                    const clientInGroup = client as ExtendedWebsocket;
+                    if (clientInGroup.user.email === user.email) {
+                      console.log(
+                        "Extended Client User Property in the group: ",
+                        clientInGroup.user
+                      );
+                    }
+                    return clientInGroup.user.email === targetUserEmail;
+                  }
+                ) as ExtendedWebsocket | undefined;
+
+                if (targetClientSocket && targetClientSocket.readyState === 1) {
+                  // online users will get the message immediately
+                  console.log(
+                    `${targetUserEmail} is online and added to the group ${groupName} successfully`
+                  );
+                  ws.send(
+                    JSON.stringify({
+                      message: `${targetUserEmail} is online and has been added`,
+                      status: "success",
+                    })
+                  );
+                  // sending the data to the client
+                  targetClientSocket.send(
+                    JSON.stringify({
+                      action: "joined-group",
+                      title: "Group Joined",
+                      message: `You joined the group ${groupName} created by ${ws.user.name}`,
+                    })
+                  );
+                } else {
+                  // inserting this notification into the notification table as he/she is offline
+                  console.log(
+                    "target user group socket email is offline: ",
+                    targetUserEmail
+                  );
+                  ws.send(
+                    JSON.stringify({
+                      message: `${targetUserEmail} is offline as it's socket is closed`,
+                      status: "success",
+                    })
+                  );
+                  // targetClientSocket === undefined
+                  await prisma.notifications.create({
+                    data: {
+                      receiverId: Number(user.id),
+                      receiverEmail: String(user.email),
+                      senderEmail: String(ws.user.email),
+                      title: `Group Joined`,
+                      message: `You joined the group ${groupName} created by ${ws.user.name}`,
+                      createdAt: new Date(Date.now()),
+                      isRead: false,
+                      notificationType: "joined-group"
+                    }
+                  });
+                };
+              } else {
+                console.log(
+                  "Client is offline, meaning that he/she is not connected to websocket"
+                );
+                ws.send(
+                  JSON.stringify({
+                    message: "Client not connected to websocket",
+                    status: "",
+                  })
+                );
+                // await prisma.notifications.create({
+                //   data: {
+                //     receiverId: Number(user.id),
+                //     receiverEmail: String(user.email),
+                //     senderEmail: String(ws.user.email),
+                //     title: `Group Joined`,
+                //     message: `You joined the group ${groupName} created by ${ws.user.name}`,
+                //     createdAt: new Date(Date.now()),
+                //     isRead: false,
+                //     notificationType: "joined-group"
+                //   }
+                // });
+              }
+            });
+          }
+        });
       }
 
       // handling messages between the client and the target user account
@@ -493,8 +521,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               message: `${parsedMessage.message}`,
               createdAt: new Date(Date.now()),
               isRead: false,
-              notificationType: "receive-message"
-            }
+              notificationType: "receive-message",
+            },
           });
           await createAndUpdateChatPartnersData(
             ws.user, // sender = defined
@@ -543,7 +571,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
       }
 
       // for actions regarding groups
-      if(parsedMessage.action === "start-group-chat") {
+      if (parsedMessage.action === "start-group-chat") {
         const targetGroup: Groups = parsedMessage.targetGroup;
         console.log("target group: ", targetGroup);
 
@@ -558,21 +586,30 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         groupMembers.forEach((member) => {
           const isOnlineGroupMember = Array.from(wss.clients).forEach((x) => {
             const extendedClient = x as ExtendedWebsocket;
-            if(extendedClient.user.email === member.email) {
-              console.log("extended client user property: ", extendedClient.user);
-            };
+            if (extendedClient.user.email === member.email) {
+              console.log(
+                "extended client user property: ",
+                extendedClient.user
+              );
+            }
             return extendedClient.user.email === member.email;
           }) as ExtendedWebsocket | undefined;
 
-          if(!isOnlineGroupMember || isOnlineGroupMember === undefined) {
+          if (!isOnlineGroupMember || isOnlineGroupMember === undefined) {
             console.log(`${member.name} is offline.`);
             offlineGroupMembers.push(member);
-          } else if(isOnlineGroupMember && isOnlineGroupMember.readyState === 2) {
+          } else if (
+            isOnlineGroupMember &&
+            isOnlineGroupMember.readyState === 2
+          ) {
             console.log(`${isOnlineGroupMember.user.name} is online now.`);
-            console.log(`Info regarding ${isOnlineGroupMember.user.name}: `, isOnlineGroupMember.user);
+            console.log(
+              `Info regarding ${isOnlineGroupMember.user.name}: `,
+              isOnlineGroupMember.user
+            );
             onlineGroupMembers.push(member);
           }
-        })
+        });
       }
     } catch (error) {
       console.error("Websocker error: ", error);
