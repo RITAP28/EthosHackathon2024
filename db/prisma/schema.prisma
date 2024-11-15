@@ -110,14 +110,17 @@ model GroupChat {
 }
 
 model Notifications {
-  id               Int      @id @unique @default(autoincrement())
+  id               Int       @id @unique @default(autoincrement())
   receiverId       Int
   receiverEmail    String
   senderEmail      String
   title            String
   message          String
-  createdAt        DateTime @default(now())
-  isRead           Boolean  @default(false)
+  isGroup          Boolean   @default(false)
+  groupName        String?
+  createdAt        DateTime  @default(now())
+  receivedAt       DateTime? // Nullable field, will be null at creation time
+  isRead           Boolean   @default(false)
   notificationType String
 
   @@unique([receiverEmail, senderEmail, id])

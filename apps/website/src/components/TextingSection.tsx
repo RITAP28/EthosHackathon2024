@@ -569,6 +569,8 @@ const TextingSection = ({
             position: "top-right",
             duration: 400
           });
+        } else if (data.action === "receive-group-message") {
+          console.log("Received message from group: ", data.message);
         }
       };
     }
