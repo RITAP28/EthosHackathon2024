@@ -61,7 +61,7 @@ export interface Members {
 }
 
 export interface GroupChatHistory {
-    id: number;
+    id?: number;
     groupId: number;
     groupName: string;
     senderId: number;
@@ -69,5 +69,5 @@ export interface GroupChatHistory {
     senderEmail: string;
     textMetadata: string;
     sentAt: Date;
-    isDelivered: boolean;
+    isDelivered?: boolean;
 }

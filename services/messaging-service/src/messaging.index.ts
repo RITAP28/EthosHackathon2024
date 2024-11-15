@@ -152,6 +152,11 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               },
             });
           } else if (notification.notificationType === "receive-group-message") {
+            const sender = await prisma.user.findUnique({
+              where: {
+                email: notification.senderEmail
+              }
+            });
             ws.send(
               JSON.stringify({
                 action: "receive-group-message",
@@ -159,7 +164,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 message: notification.message,
                 isGroup: true,
                 groupName: notification.groupName,
-                from: notification.senderEmail,
+                senderId: sender?.id,
+                senderName: sender?.name,
+                senderEmail: notification.senderEmail,
                 sentAt: notification.createdAt,
                 receivedAt: new Date(Date.now())
               })
@@ -639,7 +646,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             isOnlineGroupMember.send(
               JSON.stringify({
                 action: "receive-group-message",
-                group: `${targetGroup.groupName}`,
+                group: `${targetGroup}`,
                 title: `${ws.user.name} has sent a message in ${targetGroup.groupName}`,
                 message: `${textMetadata}`,
                 from: ws.user.name,

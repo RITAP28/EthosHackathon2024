@@ -86,6 +86,7 @@ const TextingSection = ({
   const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
 
   const [textMessage, setTextMessage] = useState<string>("");
+  const [groupTextMessage, setGroupTextMessage] = useState<string>("");
 
   const [loadingChatHistory, setLoadingChatHistory] = useState<boolean>(false);
   const toast = useToast();
@@ -462,6 +463,63 @@ const TextingSection = ({
     }).format(messageDate);
   };
 
+  const handleGroupSendButtonClick = async (
+    group: Group,
+    textMetadata: string
+  ) => {
+    try {
+      if (ws && ws.OPEN) {
+        ws.send(
+          JSON.stringify({
+            action: "send-group-message",
+            targetGroup: group,
+            textMetadata: textMetadata,
+          })
+        );
+        setGroupChatHistory((prevChats) => [
+          ...prevChats,
+          {
+            groupId: group.id as number,
+            groupName: group.name as string,
+            senderId: currentUser?.id as number,
+            senderName: currentUser?.name as string,
+            senderEmail: currentUser?.email as string,
+            textMetadata: textMetadata,
+            sentAt: new Date(Date.now()),
+            isDelivered: false,
+          },
+        ]);
+
+        ws.onclose = () => {
+          console.log("Websocket connection closed");
+          toast({
+            title: `WebSocket connection closed`,
+            description: `Now you are no longer connected to our servers`,
+            status: "warning",
+            duration: 4000,
+            isClosable: true,
+          });
+        };
+
+        ws.onerror = () => {
+          console.error("Websocket connection error");
+          toast({
+            title: `WebSocket connection Error`,
+            description: `Something went wrong with websockets`,
+            status: "error",
+            duration: 4000,
+            isClosable: true,
+          });
+        };
+      }
+    } catch (error) {
+      console.error(
+        "Error while sending a text into the group from the client: ",
+        error
+      );
+    }
+  };
+
   useEffect(() => {
     if (ws && ws.OPEN) {
       // fetching users from the database from the database via websockets
@@ -567,27 +625,39 @@ const TextingSection = ({
             description: data.message,
             isClosable: true,
             position: "top-right",
-            duration: 400
+            duration: 400,
           });
         } else if (data.action === "receive-group-message") {
           console.log("Received message from group: ", data.message);
+          setGroupChatHistory((prevChats) => [
+            ...prevChats,
+            {
+              groupId: data.targetGroup.id,
+              groupName: data.targetGroup.name,
+              senderId: Number(currentUser?.id),
+              senderName: String(currentUser?.name),
+              senderEmail: String(currentUser?.email),
+              textMetadata: data.message,
+              sentAt: data.sentAt,
+            },
+          ]);
+          toast({
+            title: `Received a message from ${data.targetGroup.name}`,
+            status: "success",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right"
+          });
         }
       };
-    }
+    };
 
     return () => {
       if (ws) {
         ws.onmessage = null;
       }
     };
-  }, [
-    ws,
-    toast,
-    currentChat,
-    currentUser?.email,
-    setChatHistory,
-    setLatestText,
-  ]);
+  }, [ws, toast, currentChat, currentUser, setChatHistory, setLatestText]);
 
   const handleCreateGroup = async () => {
     setGroupCreationLoading(true);
@@ -1014,7 +1084,7 @@ const TextingSection = ({
                       placeholder="Your Message"
                       onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         e.preventDefault();
-                        setTextMessage(e.target.value);
+                        setGroupTextMessage(e.target.value);
                       }}
                     />
                   </div>
@@ -1029,11 +1099,7 @@ const TextingSection = ({
                     <div
                       className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full"
                       onClick={() => {
-                        handleSendButtonClick(
-                          currentChat?.receiverId as number,
-                          currentChat?.receiverName as string,
-                          currentChat?.receiverEmail as string
-                        );
+                        handleGroupSendButtonClick();
                       }}
                     >
                       <IoSend className="text-[1.5rem]" />
