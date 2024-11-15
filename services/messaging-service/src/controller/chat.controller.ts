@@ -323,6 +323,8 @@ export async function getGroupChatHistory(groupId: number) {
         groupId: groupId
       }
     });
+    console.log("group chat history: ", chatHistory);
+    return chatHistory;
   } catch (error) {
     console.error(`Error while fetching the chat history of the group with id ${groupId}: `, error);
   };

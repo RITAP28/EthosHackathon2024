@@ -776,11 +776,29 @@ const TextingSection = ({
     }
   };
 
+  const handleGetGroupChatHistory = async (group: Group) => {
+    try {
+      const chatHistory = await axios.get(`${import.meta.env.VITE_BASE_URL}/get/group/allchat?groupId=${group.id}`, {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      });
+      console.log("Chat history retrieved successfully: ", chatHistory.data.chatHistory);
+      setGroupChatHistory(chatHistory.data.chatHistory);
+    } catch (error) {
+      console.error("Error while fetching group chat history: ", error);
+    };
+  };
+
   const handleClickOnAnyGroup = async (group: Group) => {
     try {
       setGroupWindow(true);
       setChatWindow(false);
       setGroupChat(group);
+
+      await handleGetGroupChatHistory(group);
     } catch (error) {
       console.error("Error while clicking on any group: ", error);
     }
