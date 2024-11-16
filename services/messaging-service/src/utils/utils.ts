@@ -60,9 +60,10 @@ export interface Member {
 
 export interface Groups {
   id?: number;
-  groupName?: string;
-  groupDescription?: string;
+  name?: string;
+  description?: string;
   totalMembers?: number;
+  ownerId?: number;
   members?: Member[];
   createdAt?: Date;
   updatedAt?: Date;

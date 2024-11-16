@@ -151,11 +151,13 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 receivedAt: new Date(Date.now()),
               },
             });
-          } else if (notification.notificationType === "receive-group-message") {
+          } else if (
+            notification.notificationType === "receive-group-message"
+          ) {
             const sender = await prisma.user.findUnique({
               where: {
-                email: notification.senderEmail
-              }
+                email: notification.senderEmail,
+              },
             });
             ws.send(
               JSON.stringify({
@@ -168,19 +170,19 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 senderName: sender?.name,
                 senderEmail: notification.senderEmail,
                 sentAt: notification.createdAt,
-                receivedAt: new Date(Date.now())
+                receivedAt: new Date(Date.now()),
               })
             );
             await prisma.notifications.update({
               where: {
-                id: notification.id
+                id: notification.id,
               },
               data: {
                 isRead: true,
-                receivedAt: new Date(Date.now())
-              }
+                receivedAt: new Date(Date.now()),
+              },
             });
-          };
+          }
         });
       }
 
@@ -578,10 +580,19 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         const textMetadata = String(parsedMessage.textMetadata);
 
         ws.groups = targetGroup;
-        console.log("Group name in the socket of user: ", ws.groups.groupName);
+        console.log("Group name in the socket of user: ", ws.groups.name);
 
-        const groupMembers = targetGroup.members as Member[];
-        console.log("Group Members: ", groupMembers);
+        const allMembers = targetGroup.members as Member[];
+        console.log("All Members including the sender: ", allMembers);
+        const groupMembersExceptSender = [] as Member[];
+        for (const member of allMembers) {
+          if (member.email !== ws.user.email)
+            groupMembersExceptSender.push(member);
+        }
+        console.log(
+          "Group Members except the sender: ",
+          groupMembersExceptSender
+        );
 
         const onlineGroupMembers: Member[] = [];
         const offlineGroupMembers: Member[] = [];
@@ -590,7 +601,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         await prisma.groupChat.create({
           data: {
             groupId: Number(ws.groups.id),
-            groupName: String(ws.groups.groupName),
+            groupName: String(ws.groups.name),
             senderId: Number(ws.user.id),
             senderName: String(ws.user.name),
             senderEmail: String(ws.user.email),
@@ -601,7 +612,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         });
 
         // checking which members are online and offline
-        groupMembers.forEach(async (member) => {
+        groupMembersExceptSender.forEach(async (member) => {
           const isOnlineGroupMember = Array.from(wss.clients).forEach((x) => {
             const extendedClient = x as ExtendedWebsocket;
             if (extendedClient.user.email === member.email) {
@@ -621,16 +632,16 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               data: {
                 receiverId: Number(member.id),
                 receiverEmail: String(member.email),
-                senderEmail: String(member.email),
-                title: `${ws.user.name} has sent a message in ${targetGroup.groupName}`,
+                senderEmail: String(ws.user.email),
+                title: `${ws.user.name} has sent a message in ${targetGroup.name}`,
                 message: `${textMetadata}`,
                 isGroup: true,
-                groupName: targetGroup.groupName,
+                groupName: targetGroup.name,
                 createdAt: new Date(Date.now()),
                 isRead: false,
-                notificationType: "receive-group-message"
-              }
-            })
+                notificationType: "receive-group-message",
+              },
+            });
           } else if (
             isOnlineGroupMember &&
             isOnlineGroupMember.readyState === 2
@@ -643,23 +654,28 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             onlineGroupMembers.push(member);
 
             // sending a message directly to the socket
-            isOnlineGroupMember.send(
-              JSON.stringify({
-                action: "receive-group-message",
-                group: `${targetGroup}`,
-                title: `${ws.user.name} has sent a message in ${targetGroup.groupName}`,
-                message: `${textMetadata}`,
-                from: ws.user.name,
-                sentAt: new Date(Date.now())
-              })
-            );
+            if (member.email !== isOnlineGroupMember.user.email) {
+              isOnlineGroupMember.send(
+                JSON.stringify({
+                  action: "receive-group-message",
+                  group: `${targetGroup}`,
+                  title: `${ws.user.name} has sent a message in ${targetGroup.name}`,
+                  message: `${textMetadata}`,
+                  from: ws.user.name,
+                  sentAt: new Date(Date.now()),
+                })
+              );
+            }
           }
         });
         console.log("Offline members right now: ", offlineGroupMembers);
         console.log("Online members right now: ", onlineGroupMembers);
       } else if (parsedMessage.action === "receive-group-message") {
         try {
-          console.log(`Message in ${parsedMessage.groupName}: `, parsedMessage.message);
+          console.log(
+            `Message in ${parsedMessage.groupName}: `,
+            parsedMessage.message
+          );
           ws.send(
             JSON.stringify({
               title: `${parsedMessage.from} sent a message in ${parsedMessage.groupName}`,
@@ -667,10 +683,12 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               from: parsedMessage.from,
               group: parsedMessage.groupName,
               sentAt: parsedMessage.sentAt,
-              receivedAt: new Date(Date.now())
+              receivedAt: new Date(Date.now()),
             })
           );
-          console.log(`Server successfully notified the client ${ws.user.name} of the message sent in the group ${parsedMessage.groupName}`);
+          console.log(
+            `Server successfully notified the client ${ws.user.name} of the message sent in the group ${parsedMessage.groupName}`
+          );
         } catch (error) {
           console.log("Error receiving a text from a group: ", error);
         }

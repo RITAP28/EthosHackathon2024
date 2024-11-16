@@ -1117,7 +1117,7 @@ const TextingSection = ({
                     <div
                       className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full"
                       onClick={() => {
-                        handleGroupSendButtonClick();
+                        handleGroupSendButtonClick(groupChat, groupTextMessage);
                       }}
                     >
                       <IoSend className="text-[1.5rem]" />
