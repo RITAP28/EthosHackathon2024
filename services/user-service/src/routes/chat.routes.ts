@@ -6,5 +6,5 @@ import { getGroupChatHistory, getGroupOwner, getGroupsForUser } from '../control
 export default (router: express.Router) => {
     router.get('/get/groups', isAuthenticated, getGroupsForUser);
     router.get('/get/group/allchat', isAuthenticated, getGroupChatHistory);
-    router.get('/get/group/owner', isAuthenticated, getGroupOwner);
+    router.get('/get/group/owner', getGroupOwner);
 }
