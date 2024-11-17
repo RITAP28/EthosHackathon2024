@@ -108,6 +108,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
       const undeliveredNotifications = await prisma.notifications.findMany({
         where: {
           receiverId: ws.user.id,
+          isRead: false
         },
       });
       if (undeliveredNotifications && undeliveredNotifications.length > 0) {
@@ -173,6 +174,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 receivedAt: new Date(Date.now()),
               })
             );
+            console.log("'receive-group-message' notification sent successfully");
             await prisma.notifications.update({
               where: {
                 id: notification.id,
@@ -182,6 +184,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 receivedAt: new Date(Date.now()),
               },
             });
+            console.log("'receive-group-message' notification updated successfully");
           }
         });
       }

@@ -28,6 +28,7 @@ import { CiMenuKebab } from "react-icons/ci";
 import { GoPaperclip } from "react-icons/go";
 import { MdKeyboardVoice } from "react-icons/md";
 import { IoSend } from "react-icons/io5";
+import GroupInfo from "./GroupInfo";
 
 const TextingSection = ({
   token,
@@ -92,11 +93,12 @@ const TextingSection = ({
   const toast = useToast();
 
   // const [loadingGroups, setLoadingGroups] = useState<boolean>(false);
-  const [, setGroupCreationLoading] = useState<boolean>(false);
+  const [groupCreationLoading, setGroupCreationLoading] =
+    useState<boolean>(false);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [groupDescription, setGroupDescription] = useState<string | null>(null);
-
-  const [isAdded, setIsAdded] = useState<boolean | null>(null);
+  const [resizeWidth, setResizeWidth] = useState<number>(75);
+  const [showGroupInfo, setShowGroupInfo] = useState<boolean>(false);
 
   const usersToAddInTheGroup: User[] = [];
 
@@ -646,11 +648,11 @@ const TextingSection = ({
             status: "success",
             duration: 4000,
             isClosable: true,
-            position: "top-right"
+            position: "top-right",
           });
         }
       };
-    };
+    }
 
     return () => {
       if (ws) {
@@ -759,18 +761,20 @@ const TextingSection = ({
 
   const handleAddUserInGroup = async (user: User) => {
     try {
-      if (!isAdded) {
+      const userIndex = usersToAddInTheGroup.findIndex((x) => x.id === user.id);
+      if (userIndex !== -1) {
+        usersToAddInTheGroup.splice(userIndex, 1);
+        console.log(`${user.name} has been removed from the users list`);
+        console.log("Another user removed: ", usersToAddInTheGroup);
+      } else {
         usersToAddInTheGroup.push(user);
         console.log(
-          "Total users to be added till now: ",
+          "Total users added till now: ",
           usersToAddInTheGroup.length
         );
         console.log("Another user added: ", usersToAddInTheGroup);
-      } else if (isAdded) {
-        setIsAdded(false);
-        console.log(`${user.name} has been removed from the users list`);
-        console.log("Another user removed: ", usersToAddInTheGroup);
       }
+      console.log("Updated users in the list: ", usersToAddInTheGroup);
     } catch (error) {
       console.error("Error while adding/removing user in group: ", error);
     }
@@ -778,18 +782,26 @@ const TextingSection = ({
 
   const handleGetGroupChatHistory = async (group: Group) => {
     try {
-      const chatHistory = await axios.get(`${import.meta.env.VITE_BASE_URL}/get/group/allchat?groupId=${group.id}`, {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
+      const chatHistory = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/get/group/allchat?groupId=${
+          group.id
+        }`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-      console.log("Chat history retrieved successfully: ", chatHistory.data.chatHistory);
+      );
+      console.log(
+        "Chat history retrieved successfully: ",
+        chatHistory.data.chatHistory
+      );
       setGroupChatHistory(chatHistory.data.chatHistory);
     } catch (error) {
       console.error("Error while fetching group chat history: ", error);
-    };
+    }
   };
 
   const handleClickOnAnyGroup = async (group: Group) => {
@@ -1033,7 +1045,8 @@ const TextingSection = ({
             </div>
           )}
           {groupWindow && groupChat && (
-            <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between">
+            <>
+            <div className={`w-[${resizeWidth}%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between`}>
               <div className="w-full h-[10%] flex flex-row bg-slate-500 rounded-tr-2xl">
                 <div className="w-[10%] flex justify-center items-center">
                   <div className="p-3 bg-slate-400 rounded-xl">
@@ -1041,7 +1054,18 @@ const TextingSection = ({
                   </div>
                 </div>
                 <div className="w-[60%] flex justify-start items-center">
-                  <p className="text-xl font-Philosopher font-semibold">
+                  <p
+                    className="text-xl font-Philosopher font-semibold hover:cursor-pointer"
+                    onClick={() => {
+                      if(resizeWidth === 75){
+                        setResizeWidth(50);
+                        setShowGroupInfo(true);
+                      } else {
+                        setResizeWidth(75);
+                        setShowGroupInfo(false);
+                      }
+                    }}
+                  >
                     {groupChat.name}
                   </p>
                 </div>
@@ -1065,6 +1089,7 @@ const TextingSection = ({
                       chat.senderEmail === currentUser?.email ? (
                         <div className="flex justify-end pt-2" key={index}>
                           <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
+                            <div className="w-full font-Philosopher">You</div>
                             <div className="w-full">
                               <p className="text-white">{chat.textMetadata}</p>
                             </div>
@@ -1076,6 +1101,9 @@ const TextingSection = ({
                       ) : (
                         <div className="flex justify-start pt-2" key={index}>
                           <div className="p-3 bg-blue-500 rounded-lg max-w-[70%] flex flex-col">
+                            <div className="w-full font-Philosopher">
+                              {chat.senderName}
+                            </div>
                             <div className="w-full">
                               <p className="text-white">{chat.textMetadata}</p>
                             </div>
@@ -1088,7 +1116,7 @@ const TextingSection = ({
                     )}
               </div>
               {/* lower bar containing the text input for sending the texts */}
-              <div className="w-full bg-slate-500 flex flex-row h-[3.5rem]">
+              <div className="w-full bg-slate-500 flex flex-row h-[3.5rem] rounded-br-2xl">
                 <div className="w-[5%] flex justify-center items-center">
                   <GoPaperclip className="text-[1.5rem]" />
                 </div>
@@ -1126,6 +1154,12 @@ const TextingSection = ({
                 </div>
               </div>
             </div>
+            {resizeWidth === 50 && showGroupInfo && (
+              <div className=" ml-1 w-[25%] bg-red-400 rounded-2xl py-2 px-2">
+                <GroupInfo group={groupChat} />
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>
@@ -1275,7 +1309,9 @@ const TextingSection = ({
                                   handleAddUserInGroup(user);
                                 }}
                               >
-                                {isAdded ? "Remove" : "Add"}
+                                {usersToAddInTheGroup.includes(user)
+                                  ? "Remove"
+                                  : "Add"}
                               </button>
                             </div>
                           </div>
@@ -1289,7 +1325,7 @@ const TextingSection = ({
                 <div className="w-full flex justify-center">
                   <button
                     type="button"
-                    className="px-3 py-1 rounded-md hover:cursor-pointer bg-red-400"
+                    className="px-3 py-2 rounded-md hover:cursor-pointer bg-green-600 font-Philosopher transition ease-in-out duration-200 hover:bg-green-500 font-bold"
                     onClick={() => {
                       // handleCreateGroup();
                       console.log("group name: ", groupName);
@@ -1298,7 +1334,9 @@ const TextingSection = ({
                       handleCreateGroup();
                     }}
                   >
-                    Create Group
+                    {groupCreationLoading
+                      ? "Creating, Please Wait..."
+                      : "Create Group"}
                   </button>
                 </div>
               </ModalFooter>

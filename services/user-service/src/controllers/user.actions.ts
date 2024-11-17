@@ -319,3 +319,32 @@ export async function getGroupChatHistory(req: Request, res: Response) {
     });
   }
 }
+
+export async function getGroupOwner(req: Request, res: Response) {
+  try {
+    const { id } = req.query;
+    const groupOwner = await prisma.user.findUnique({
+      where: {
+        id: Number(id)
+      },
+      select: {
+        name: true,
+        email: true,
+        ownedGroups: true,
+        isAuthenticated: true
+      }
+    });
+    console.log(groupOwner);
+    return res.status(200).json({
+      success: true,
+      msg: "Group Owner found successfully",
+      groupOwner: groupOwner
+    });
+  } catch (error) {
+    console.error("Error while fetching group owner: ", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error"
+    });
+  };
+};
