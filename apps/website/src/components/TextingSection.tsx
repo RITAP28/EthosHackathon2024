@@ -1155,7 +1155,7 @@ const TextingSection = ({
               </div>
             </div>
             {resizeWidth === 50 && showGroupInfo && (
-              <div className=" ml-1 w-[25%] bg-red-400 rounded-2xl py-2 px-2">
+              <div className=" ml-1 w-[25%] bg-slate-700 rounded-2xl py-2 px-2">
                 <GroupInfo group={groupChat} />
               </div>
             )}
