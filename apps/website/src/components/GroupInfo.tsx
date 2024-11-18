@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Group } from "../lib/interface";
+import { Group, Members } from "../lib/interface";
 import { FaUser } from "react-icons/fa";
 import { useAppSelector } from "../redux/hooks/hook";
 import { useCallback, useEffect, useState } from "react";
@@ -10,9 +10,7 @@ import {
   ModalHeader,
   ModalFooter,
   ModalBody,
-  ModalCloseButton,
   useDisclosure,
-  useToast,
   Button,
 } from "@chakra-ui/react";
 
@@ -24,12 +22,64 @@ interface IGroupOwner {
 }
 const GroupInfo = ({ group }: { group: Group }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
+//   const toast = useToast();
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
 
-  const [exitGroupModal, setExitGroupModal] = useState<boolean | null>(null);
+//   const config = useMemo(
+//     {
+//       withCredentials: true,
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//         "Content-Type": "application/json",
+//       },
+//     },
+//     [accessToken]
+//   );
+
+  const [exitGroupModal, setExitGroupModal] = useState<boolean>(false);
+  const [makeSomeoneAdminBeforeExiting, setMakeSomeoneAdminBeforeExiting] =
+    useState<boolean>(false);
 
   const [owner, setOwner] = useState<IGroupOwner | null>(null);
+
+  const [groupMembersLoading, setGroupMembersLoading] =
+    useState<boolean>(false);
+  const [groupMembers, setGroupMembers] = useState<Members[]>([]);
+  const [selectedAdmin, setSelectedAdmin] = useState<Members | null>(null);
+
+  const adminArray: Members[] = [];
+  group.members.forEach((member) => {
+    if (member.role === "ADMIN") {
+      adminArray.push(member);
+    }
+  });
+  console.log(`Admins in the group ${group.name}: `, adminArray);
+
+  const handleMakeAdmin = async (userId: number, groupId: number) => {
+    try {
+      const makeAdmin = await axios.put(
+        `${
+          import.meta.env.VITE_BASE_URL
+        }/put/group/makeAdminBeforeExiting?groupId=${groupId}&userId=${userId}`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(
+        `Admin has been changed and the new admin of the group ${group.name} is: `,
+        makeAdmin.data.newAdmin
+      );
+    } catch (error) {
+      console.error(
+        "Error while getting confirmation for exiting the group: ",
+        error
+      );
+    }
+  };
 
   const handleGetOwner = useCallback(async () => {
     try {
@@ -54,6 +104,70 @@ const GroupInfo = ({ group }: { group: Group }) => {
     handleGetOwner();
   }, [handleGetOwner]);
 
+  const handleGetMembers = useCallback(
+    async (group: Group) => {
+      setGroupMembersLoading(true);
+      try {
+        const groupMembersResponse = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/get/group/members?groupId=${
+            group.id
+          }`,
+          {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log(
+          `Here are the group members for the group ${group.name}: `,
+          groupMembersResponse.data.groupMembers
+        );
+        setGroupMembers(groupMembersResponse.data.groupMembers);
+      } catch (error) {
+        console.error("Error while getting members of the group: ", error);
+      }
+      setGroupMembersLoading(false);
+    },
+    [accessToken]
+  );
+
+  useEffect(() => {
+    if (makeSomeoneAdminBeforeExiting === true) {
+      handleGetMembers(group);
+    }
+  }, [handleGetMembers, group, makeSomeoneAdminBeforeExiting]);
+
+  const handleExitGroup = async (userId: number, groupId: number) => {
+    try {
+      console.log("selectedAdmin: ", selectedAdmin);
+      await handleMakeAdmin(selectedAdmin?.userId as number, group.id);
+      const exitGroupAction = await axios.delete(
+        `${
+          import.meta.env.VITE_BASE_URL
+        }/delete/group/exit/admin?userId=${userId}&groupId=${groupId}`,
+        {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+      );
+      console.log(
+        `The new admin of the group ${group.id} is: `,
+        selectedAdmin?.name
+      );
+      console.log(
+        `Updated Members of ${group.name}: `,
+        exitGroupAction.data.updatedMembers
+      );
+    } catch (error) {
+      console.error("Error  while exiting groups: ", error);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col">
       <div className="w-full flex justify-center">
@@ -77,10 +191,15 @@ const GroupInfo = ({ group }: { group: Group }) => {
         </div>
         <div className="w-full flex flex-col gap-2 font-Philosopher">
           {group.members.map((member, index) => (
-            <div className="w-full flex flex-row py-2 px-2 bg-slate-500 rounded-lg" key={index}>
+            <div
+              className="w-full flex flex-row py-2 px-2 bg-slate-500 rounded-lg"
+              key={index}
+            >
               {member.role === "ADMIN" ? (
                 <>
-                  <div className="w-[80%] items-center text-black font-bold">{member.name}</div>
+                  <div className="w-[80%] items-center text-black font-bold">
+                    {member.name}
+                  </div>
                   <div className="w-[20%]">
                     <button className="rounded-sm hover:cursor-default px-[4px] py-[1px] font-bold text-black">
                       {member.role}
@@ -88,7 +207,9 @@ const GroupInfo = ({ group }: { group: Group }) => {
                   </div>
                 </>
               ) : (
-                <div className="w-full flex flex-row text-black font-bold">{member.name}</div>
+                <div className="w-full flex flex-row text-black font-bold">
+                  {member.name}
+                </div>
               )}
             </div>
           ))}
@@ -123,17 +244,15 @@ const GroupInfo = ({ group }: { group: Group }) => {
             <ModalContent>
               <ModalHeader>
                 <div className="w-full flex justify-center">
-                    Exiting group {`${group.name}`}
+                  Exiting group {`${group.name}`}
                 </div>
               </ModalHeader>
-              <ModalCloseButton />
+              {/* <ModalCloseButton /> */}
               <ModalBody>
                 <div className="w-full font-Philosopher font-bold">
-                Are you sure you want to exit group {`${group.name}`}? 
+                  Are you sure you want to exit group {`${group.name}`}?
                 </div>
-                <div className="w-full">
-                This action cannot be undone.
-                </div>
+                <div className="w-full">This action cannot be undone.</div>
               </ModalBody>
 
               <ModalFooter>
@@ -147,9 +266,91 @@ const GroupInfo = ({ group }: { group: Group }) => {
                 >
                   Cancel
                 </Button>
-                <Button variant="ghost" className="bg-red-400">
-                    Yes
+                <button
+                  type="button"
+                  className="bg-red-400 px-3 py-2 rounded-md font-bold hover:cursor-pointer"
+                  onClick={async () => {
+                    console.log("Clicked yes");
+                    if (adminArray.length === 1) {
+                      // another modal to make someone else the admin
+                      console.log(
+                        "Since there is only one admin, you need to make someone admin first before exiting the group"
+                      );
+                      setMakeSomeoneAdminBeforeExiting(true);
+                    } else {
+                      // direct exit
+                      await handleExitGroup(currentUser?.id as number, group.id);
+                    }
+                  }}
+                >
+                  Yes
+                </button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+        )}
+
+        {/* modal for making someone else admin before completely exiting the group */}
+        {makeSomeoneAdminBeforeExiting && (
+          <Modal isOpen={isOpen} onClose={onClose} isCentered>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>
+                <div className="w-full flex justify-center font-Philosopher font-bold text-[1.5rem]">
+                  Make somebody Admin first:
+                </div>
+              </ModalHeader>
+              <ModalBody>
+                <div className="">
+                  {groupMembersLoading ? (
+                    "Loading..."
+                  ) : (
+                    <div className="w-full flex flex-row">
+                      <div className="w-[50%]">Choose Admin:</div>
+                      <div className="w-[50%]">
+                        <select
+                          name="members"
+                          id=""
+                          className=""
+                          onChange={(e) => {
+                            setSelectedAdmin(
+                              groupMembers[e.target.selectedIndex]
+                            );
+                          }}
+                        >
+                          {groupMembers.map((member, index) => (
+                            <option value={member.name} key={index}>
+                              {member.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ModalBody>
+
+              <ModalFooter>
+                <Button
+                  colorScheme="blue"
+                  mr={3}
+                  onClick={() => {
+                    setMakeSomeoneAdminBeforeExiting(false);
+                    setExitGroupModal(false);
+                    onClose();
+                  }}
+                >
+                  Close
                 </Button>
+                <button
+                  type="button"
+                  className="bg-red-400 px-3 py-2 rounded-md font-bold hover:cursor-pointer"
+                  onClick={() => {
+                    handleExitGroup(currentUser?.id as number, group.id)
+                  }}
+                >
+                  Confirm and Exit
+                </button>
               </ModalFooter>
             </ModalContent>
           </Modal>

@@ -325,65 +325,131 @@ export async function getGroupOwner(req: Request, res: Response) {
     const { id } = req.query;
     const groupOwner = await prisma.user.findUnique({
       where: {
-        id: Number(id)
+        id: Number(id),
       },
       select: {
         name: true,
         email: true,
         ownedGroups: true,
-        isAuthenticated: true
-      }
+        isAuthenticated: true,
+      },
     });
     console.log(groupOwner);
     return res.status(200).json({
       success: true,
       msg: "Group Owner found successfully",
-      groupOwner: groupOwner
+      groupOwner: groupOwner,
     });
   } catch (error) {
     console.error("Error while fetching group owner: ", error);
     return res.status(500).json({
       success: false,
-      msg: "Internal Server Error"
+      msg: "Internal Server Error",
     });
-  };
-};
+  }
+}
 
+export async function getGroupMembers(req: Request, res: Response) {
+  try {
+    const { groupId } = req.query;
+    const groupMembers = await prisma.member.findMany({
+      where: {
+        groupId: Number(groupId),
+      },
+    });
+    return res.status(200).json({
+      success: true,
+      msg: `Group members found successfully`,
+      groupMembers: groupMembers,
+    });
+  } catch (error) {
+    console.error(
+      "Error while fetching group members from the server: ",
+      error
+    );
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error",
+    });
+  }
+}
 
-export async function exitGroup(req: Request, res: Response) {
+export async function makeAdminBeforeExiting(req: Request, res: Response) {
+  try {
+    const { groupId, userId } = req.query;
+    const newAdmin = await prisma.member.update({
+      where: {
+        userId_groupId: {
+          userId: Number(userId),
+          groupId: Number(groupId),
+        },
+      },
+      data: {
+        role: "ADMIN",
+      },
+    });
+    return res.status(201).json({
+      success: true,
+      msg: `Admin changes successfully`,
+      newAdmin: newAdmin,
+    });
+  } catch (error) {
+    console.error(
+      "Error while making some other person admin in the server: ",
+      error
+    );
+    return res.status(500).json({
+      success: false,
+      msg: "Internal Server Error",
+    });
+  }
+}
+
+export async function adminExitGroup(req: Request, res: Response) {
   try {
     const { userId, groupId } = req.query;
-    // there are two cases: one is for admin and the other is for member
-    // when a member exits, he/she will simply be removed from the database
-    // but when the admin exits, he/she will be first asked to confirm his/her decision,
-    // then, he/she will be asked to make someone else the admin if there is no other admin,
-    // or, if there are multiple admins, then he/she will be simply removed just like the member
     const groupToBeExited = await prisma.group.findUnique({
       where: {
-        id: Number(groupId)
-      }
+        id: Number(groupId),
+      },
+    });
+    const adminToBeExited = await prisma.member.findUnique({
+      where: {
+        userId_groupId: {
+          userId: Number(userId),
+          groupId: Number(groupId),
+        },
+      },
+    });
+    if (!groupToBeExited || !adminToBeExited) {
+      return res.status(404).json({
+        success: false,
+        msg: "Group not found",
+      });
+    }
+    await prisma.member.delete({
+      where: {
+        userId_groupId: {
+          userId: Number(userId),
+          groupId: Number(groupId),
+        },
+      },
     });
     const allMembers = await prisma.member.findMany({
       where: {
-        groupId: Number(groupId)
-      }
+        groupId: Number(groupId),
+      },
     });
-    const userToBeExited = await prisma.user.findUnique({
-      where: {
-        id: Number(userId)
-      }
+    return res.status(200).json({
+      success: true,
+      msg: "Previous Admin exited successfully",
+      updatedMembers: allMembers
     });
-    if (!groupToBeExited || !userToBeExited) {
-      return res.status(404).json({
-        success: false,
-        msg: "Group not found"
-      });
-    };
   } catch (error) {
     console.error("Error while exiting group: ", error);
     return res.status(500).json({
       success: false,
-      msg: "Internal Server Error"
+      msg: "Internal Server Error",
     });
-  };
-};
+  }
+}
