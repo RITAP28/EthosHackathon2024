@@ -459,7 +459,6 @@ export async function adminExitGroup(req: Request, res: Response) {
       },
       data: {
         totalMembers: allMembers.length,
-        ownerId: Number(newAdminId),
         updatedAt: new Date(Date.now())
       }
     });

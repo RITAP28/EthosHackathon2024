@@ -6,6 +6,7 @@ import cors from "cors";
 import {
   accessTokenSecret,
   ExtendedDecodedToken,
+  ExtendedSocketGroups,
   ExtendedWebsocket,
   Groups,
   Member,
@@ -45,6 +46,11 @@ export const wss = new WebSocketServer({
   server: httpServer,
 });
 
+enum GroupRole {
+  ADMIN = "ADMIN",
+  MEMBER = "MEMBER"
+}
+
 wss.on("connection", async function connection(ws: ExtendedWebsocket) {
   ws.on("error", (error) => console.error(error));
 
@@ -59,7 +65,6 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         let decoded;
         try {
           decoded = jwt.verify(token, accessTokenSecret);
-          console.log("decoded: ", decoded);
           if (
             typeof decoded === "object" &&
             decoded !== null &&
@@ -68,7 +73,6 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             // if everything's good
             const decodedToken = decoded as ExtendedDecodedToken;
             console.log("Decoded token: ", decodedToken);
-            console.log("Decodedtoken Email: ", decodedToken.email);
 
             ws.user = decodedToken;
             console.log("Ws User after getting assigned: ", ws.user);
@@ -322,18 +326,36 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 updatedAt: new Date(Date.now()),
               },
             });
+          };
+
+          const newGroup: ExtendedSocketGroups = {
+            id: group.id,
+            name: group.name,
+            description: String(group.description),
+            totalMembers: group.totalMembers,
+            ownerId: Number(group.ownerId),
+            members: usersToAdd.map((u) => ({
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.id === ownerId ? GroupRole.ADMIN : GroupRole.MEMBER,
+            })),
+            latestText: 
           }
         });
         console.log("List of userd to be added: ", listOfUsersToBeAdded);
         console.log(
           `Group with name ${groupName}, having admin ${ws.user.name}, has been created successfully`
         );
+        
         ws.send(
           JSON.stringify({
             message: `Group created successfully`,
             status: "success",
           })
         );
+
+        
 
         // notifying all the users in the group about the new group
         usersToAdd.map(async (user) => {

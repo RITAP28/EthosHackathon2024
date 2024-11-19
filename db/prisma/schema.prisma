@@ -18,16 +18,18 @@ enum GroupRole {
 }
 
 model User {
-  id              Int       @id @unique @default(autoincrement())
-  name            String
-  email           String    @unique
-  password        String
-  isAuthenticated Boolean   @default(false)
-  role            Role      @default(USER)
-  createdAt       DateTime  @default(now())
-  Session         Session[]
-  ownedGroups     Group[]
-  memberships     Member[]
+  id                     Int       @id @unique @default(autoincrement())
+  name                   String
+  email                  String    @unique
+  password               String
+  isAuthenticated        Boolean   @default(false)
+  role                   Role      @default(USER)
+  createdAt              DateTime  @default(now())
+  Session                Session[]
+  memberships            Member[]
+  ownedGroups            Group[]   @relation("GroupOwner")
+  latestTextSentByGroups Group[]   @relation("LatestTextSentBy")
+  Group                  Group[]   @relation("UserRelation")
 }
 
 model Session {
@@ -66,15 +68,21 @@ model ChatPartners {
 }
 
 model Group {
-  id           Int      @id @unique @default(autoincrement())
-  name         String
-  description  String?
-  totalMembers Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now())
-  members      Member[]
-  owner        User?    @relation(fields: [ownerId], references: [id])
-  ownerId      Int?
+  id                 Int       @id @unique @default(autoincrement())
+  name               String
+  description        String?
+  totalMembers       Int
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @default(now())
+  members            Member[]
+  latestText         String?
+  latestTextSentAt   DateTime?
+  latestTextSentBy   User?     @relation(name: "LatestTextSentBy", fields: [latestTextSentById], references: [id])
+  latestTextSentById Int?
+  owner              User?     @relation(name: "GroupOwner", fields: [ownerId], references: [id])
+  ownerId            Int?
+  User               User?     @relation(name: "UserRelation", fields: [userId], references: [id])
+  userId             Int?
 
   @@unique([id, name])
 }

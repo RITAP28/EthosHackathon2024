@@ -7,7 +7,7 @@ dotenv.config();
 
 enum GroupRole {
   ADMIN = "ADMIN",
-  USER = "USER",
+  MEMBER = "MEMBER",
 }
 
 export interface Text extends Document {
@@ -67,6 +67,11 @@ export interface Groups {
   members?: Member[];
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface ExtendedSocketGroups extends Groups {
+  latestText?: string;
+  latestTextSentAt?: Date;
 }
 
 export interface ExtendedWebsocket extends WebSocket {
