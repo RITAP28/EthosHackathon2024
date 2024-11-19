@@ -393,6 +393,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                       action: "joined-group",
                       title: "Group Joined",
                       message: `You joined the group ${groupName} created by ${ws.user.name}`,
+                      groupName: groupName,
+                      admin: ws.user.name
                     })
                   );
                 } else {
@@ -404,7 +406,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                   ws.send(
                     JSON.stringify({
                       message: `${targetUserEmail} is offline as it's socket is closed`,
-                      status: "success",
+                      status: "offline but success",
                     })
                   );
                   // targetClientSocket === undefined
@@ -430,7 +432,6 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 ws.send(
                   JSON.stringify({
                     message: "Client not connected to websocket",
-                    status: "",
                   })
                 );
               }

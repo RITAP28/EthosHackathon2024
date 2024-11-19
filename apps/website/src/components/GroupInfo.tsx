@@ -206,6 +206,8 @@ const GroupInfo = ({
         <div className="w-full flex justify-center font-Philosopher">
           Members:
         </div>
+
+        {/* all members showing in the group info component */}
         <div className="w-full flex flex-col gap-2 font-Philosopher">
           {group.members.map((member, index) => (
             <div
@@ -215,7 +217,7 @@ const GroupInfo = ({
               {member.role === "ADMIN" ? (
                 <>
                   <div className="w-[80%] items-center text-black font-bold">
-                    {member.name}
+                    {(currentUser?.name === member.name) ? "You" : member.name}
                   </div>
                   <div className="w-[20%]">
                     <button className="rounded-sm hover:cursor-default px-[4px] py-[1px] font-bold text-black">

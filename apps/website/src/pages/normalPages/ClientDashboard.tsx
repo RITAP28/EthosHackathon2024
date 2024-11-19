@@ -114,7 +114,7 @@ const ClientDashboard = () => {
     }
   };
 
-  const handleGetGroups = async () => {
+  const handleGetGroups = useCallback(async () => {
     setLoadingGroups(true);
     try {
       const response = await axios.get(
@@ -134,7 +134,7 @@ const ClientDashboard = () => {
         status: "success",
         isClosable: true,
         position: "top-right",
-        duration: 4000
+        duration: 4000,
       });
     } catch (error) {
       console.error(
@@ -143,7 +143,7 @@ const ClientDashboard = () => {
       );
     }
     setLoadingGroups(false);
-  };
+  }, [currentUser, accessToken, toast]);
 
   // once the user reaches the main chatting page, he/she is immediately to connected to websockets
   // so that, the user is shown online
@@ -162,7 +162,7 @@ const ClientDashboard = () => {
         );
       };
 
-      ws.onmessage = (message) => {
+      ws.onmessage = async (message) => {
         console.log("Message received from server: ", message);
         const data = JSON.parse(message.data);
         console.log("data received from the server: ", data);
@@ -216,6 +216,18 @@ const ClientDashboard = () => {
             latestText: data.textMetadata,
             sentAt: data.sentAt,
           });
+        } else if (data.action === "joined-group") {
+          console.log(
+            `You were put in a group named ${data.groupName} by ${data.admin}`
+          );
+          await handleGetGroups()
+          toast({
+            title: `You joined a group ${data.groupName}`,
+            status: "success",
+            duration: 2000,
+            isClosable: true,
+            position: "top-right",
+          });
         }
       };
 
@@ -233,7 +245,7 @@ const ClientDashboard = () => {
         });
       };
     }
-  }, [currentUser, ws, toast, navigate, token, accessToken, latestText]);
+  }, [currentUser, ws, toast, navigate, token, accessToken, latestText, handleGetGroups]);
 
   return (
     <div className="max-h-screen bg-neutral-900 flex flex-row relative w-full">

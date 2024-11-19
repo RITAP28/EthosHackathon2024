@@ -678,11 +678,13 @@ const TextingSection = ({
           })
         );
 
-        ws.onmessage = (message) => {
+        ws.onmessage = async (message) => {
           const data = JSON.parse(message.data);
           console.log("Received message from the server: ", data);
           if (data.message === "Group created successfully") {
             console.log("Group created successfully");
+            await handleGetGroups();
+            onClose();
             toast({
               title: `Group created successfully`,
               description: `You have successfully created a group ${groupName}`,
@@ -714,6 +716,15 @@ const TextingSection = ({
               duration: 4000,
               isClosable: true,
               position: "top-right",
+            });
+          } else if (data.action === "joined-group") {
+            console.log(`You were put in a group named ${data.groupName} by ${data.admin}`);
+            toast({
+              title: `You joined a group ${data.groupName}`,
+              status: "success",
+              duration: 2000,
+              isClosable: true,
+              position: "top-right"
             });
           }
         };
