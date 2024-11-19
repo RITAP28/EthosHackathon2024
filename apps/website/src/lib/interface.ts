@@ -47,7 +47,11 @@ export interface Group {
     totalMembers: number;
     members: Members[];
     createdAt: Date;
+    updatedAt: Date;
     ownerId: number;
+    latestText?: string;
+    latestTextSentAt?: Date;
+    latestTextSentById?: number;
 }
 
 export interface Members {

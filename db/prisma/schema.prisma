@@ -125,6 +125,7 @@ model Notifications {
   title            String
   message          String
   isGroup          Boolean   @default(false)
+  groupId          Int?
   groupName        String?
   createdAt        DateTime  @default(now())
   receivedAt       DateTime? // Nullable field, will be null at creation time

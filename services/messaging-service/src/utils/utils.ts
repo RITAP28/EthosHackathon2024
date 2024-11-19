@@ -58,26 +58,24 @@ export interface Member {
   groupId?: number;
 }
 
-export interface Groups {
-  id?: number;
-  name?: string;
-  description?: string;
-  totalMembers?: number;
-  ownerId?: number;
+export interface ExtendedSocketGroups {
+  id: number;
+  name: string;
+  description: string | null;
+  totalMembers: number;
   members?: Member[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface ExtendedSocketGroups extends Groups {
-  latestText?: string;
-  latestTextSentAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  ownerId: number | null;
+  latestText: string | null;
+  latestTextSentAt: Date | null;
+  latestTextSentById: number | null;
 }
 
 export interface ExtendedWebsocket extends WebSocket {
   user: ExtendedDecodedToken;
   chatPartner: ExtendedWebsocket;
-  groups: Groups
+  groups: ExtendedSocketGroups[]
 }
 
 export const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;

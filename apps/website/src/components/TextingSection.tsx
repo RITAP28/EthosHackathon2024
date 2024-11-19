@@ -469,7 +469,7 @@ const TextingSection = ({
 
   const handleGroupSendButtonClick = async (
     group: Group,
-    textMetadata: string
+    textMetadata: string,
   ) => {
     try {
       if (ws && ws.OPEN) {
@@ -478,6 +478,7 @@ const TextingSection = ({
             action: "send-group-message",
             targetGroup: group,
             textMetadata: textMetadata,
+            senderId: Number(currentUser?.id)
           })
         );
         setGroupChatHistory((prevChats) => [
