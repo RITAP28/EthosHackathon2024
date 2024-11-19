@@ -327,11 +327,10 @@ const ClientDashboard = () => {
               chatHistory={chatHistory}
               setChatHistory={setChatHistory}
               displayGroups={displayGroups}
-              // setDisplayGroups={setDisplayGroups}
               displayIndividualChats={displayIndividualChats}
-              // setDisplayIndividualChats={setDisplayIndividualChats}
               groups={groups}
               loadingGroups={loadingGroups}
+              handleGetGroups={handleGetGroups}
             />
           </div>
         </>

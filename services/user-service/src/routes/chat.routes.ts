@@ -9,6 +9,6 @@ export default (router: express.Router) => {
     router.get('/get/group/owner', getGroupOwner);
     router.get('/get/group/members', isAuthenticated, getGroupMembers);
 
-    router.put('/put/group/makeAdminBeforeExiting', isAuthenticated, makeAdminBeforeExiting);
-    router.delete('/delete/group/exit/admin', isAuthenticated, adminExitGroup);
+    router.put('/put/group/makeAdminBeforeExiting', makeAdminBeforeExiting);
+    router.delete('/delete/group/exit/admin', adminExitGroup);
 }

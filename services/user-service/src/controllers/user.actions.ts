@@ -376,11 +376,11 @@ export async function getGroupMembers(req: Request, res: Response) {
 
 export async function makeAdminBeforeExiting(req: Request, res: Response) {
   try {
-    const { groupId, userId } = req.query;
+    const { groupId, newAdminId, oldAdminId } = req.query;
     const newAdmin = await prisma.member.update({
       where: {
         userId_groupId: {
-          userId: Number(userId),
+          userId: Number(newAdminId),
           groupId: Number(groupId),
         },
       },
@@ -388,9 +388,22 @@ export async function makeAdminBeforeExiting(req: Request, res: Response) {
         role: "ADMIN",
       },
     });
+    const oldAdmin = await prisma.member.update({
+      where: {
+        userId_groupId: {
+          userId: Number(oldAdminId),
+          groupId: Number(groupId)
+        }
+      },
+      data: {
+        role: "MEMBER"
+      }
+    });
+    console.log("New Admin: ", newAdmin);
     return res.status(201).json({
       success: true,
       msg: `Admin changes successfully`,
+      oldAdmin: oldAdmin,
       newAdmin: newAdmin,
     });
   } catch (error) {
@@ -407,7 +420,7 @@ export async function makeAdminBeforeExiting(req: Request, res: Response) {
 
 export async function adminExitGroup(req: Request, res: Response) {
   try {
-    const { userId, groupId } = req.query;
+    const { userId, groupId, newAdminId } = req.query;
     const groupToBeExited = await prisma.group.findUnique({
       where: {
         id: Number(groupId),
@@ -439,6 +452,16 @@ export async function adminExitGroup(req: Request, res: Response) {
       where: {
         groupId: Number(groupId),
       },
+    });
+    await prisma.group.update({
+      where: {
+        id: Number(groupId)
+      },
+      data: {
+        totalMembers: allMembers.length,
+        ownerId: Number(newAdminId),
+        updatedAt: new Date(Date.now())
+      }
     });
     return res.status(200).json({
       success: true,

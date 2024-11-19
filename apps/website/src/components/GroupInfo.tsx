@@ -2,7 +2,7 @@ import axios from "axios";
 import { Group, Members } from "../lib/interface";
 import { FaUser } from "react-icons/fa";
 import { useAppSelector } from "../redux/hooks/hook";
-import { useCallback, useEffect, useState } from "react";
+import React, { SetStateAction, useCallback, useEffect, useState } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -20,21 +20,26 @@ interface IGroupOwner {
   ownedGroups: Group[];
   isAuthenticated: boolean;
 }
-const GroupInfo = ({ group }: { group: Group }) => {
+const GroupInfo = ({
+  accessToken,
+  group,
+  setGroupWindow,
+  setGroupChat,
+  setShowGroupInfo,
+  setResizeWidth,
+  handleGetGroups
+}: {
+  accessToken: string | null;
+  group: Group;
+  setGroupWindow: React.Dispatch<SetStateAction<boolean | null>>;
+  setGroupChat: React.Dispatch<SetStateAction<Group | null>>;
+  setShowGroupInfo: React.Dispatch<React.SetStateAction<boolean>>;
+  setResizeWidth: React.Dispatch<React.SetStateAction<number>>;
+  handleGetGroups: () => Promise<void>;
+}) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-//   const toast = useToast();
-  const { currentUser, accessToken } = useAppSelector((state) => state.user);
-
-//   const config = useMemo(
-//     {
-//       withCredentials: true,
-//       headers: {
-//         Authorization: `Bearer ${accessToken}`,
-//         "Content-Type": "application/json",
-//       },
-//     },
-//     [accessToken]
-//   );
+  //   const toast = useToast();
+  const { currentUser } = useAppSelector((state) => state.user);
 
   const [exitGroupModal, setExitGroupModal] = useState<boolean>(false);
   const [makeSomeoneAdminBeforeExiting, setMakeSomeoneAdminBeforeExiting] =
@@ -60,7 +65,9 @@ const GroupInfo = ({ group }: { group: Group }) => {
       const makeAdmin = await axios.put(
         `${
           import.meta.env.VITE_BASE_URL
-        }/put/group/makeAdminBeforeExiting?groupId=${groupId}&userId=${userId}`,
+        }/put/group/makeAdminBeforeExiting?groupId=${groupId}&newAdminId=${userId}&oldAdminId=${
+          currentUser?.id
+        }`,
         {
           withCredentials: true,
           headers: {
@@ -73,6 +80,7 @@ const GroupInfo = ({ group }: { group: Group }) => {
         `Admin has been changed and the new admin of the group ${group.name} is: `,
         makeAdmin.data.newAdmin
       );
+      console.log("Make Admin Response: ", makeAdmin.data);
     } catch (error) {
       console.error(
         "Error while getting confirmation for exiting the group: ",
@@ -146,14 +154,16 @@ const GroupInfo = ({ group }: { group: Group }) => {
       const exitGroupAction = await axios.delete(
         `${
           import.meta.env.VITE_BASE_URL
-        }/delete/group/exit/admin?userId=${userId}&groupId=${groupId}`,
+        }/delete/group/exit/admin?userId=${userId}&groupId=${groupId}&newAdminId=${
+          selectedAdmin?.userId
+        }`,
         {
-            withCredentials: true,
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-          }
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
       console.log(
         `The new admin of the group ${group.id} is: `,
@@ -163,6 +173,13 @@ const GroupInfo = ({ group }: { group: Group }) => {
         `Updated Members of ${group.name}: `,
         exitGroupAction.data.updatedMembers
       );
+      setGroupChat(null);
+      setGroupWindow(null);
+      setShowGroupInfo(false);
+      setResizeWidth(75);
+      await handleGetGroups();
+      onClose();
+      // await handleRefreshGroups();
     } catch (error) {
       console.error("Error  while exiting groups: ", error);
     }
@@ -279,7 +296,10 @@ const GroupInfo = ({ group }: { group: Group }) => {
                       setMakeSomeoneAdminBeforeExiting(true);
                     } else {
                       // direct exit
-                      await handleExitGroup(currentUser?.id as number, group.id);
+                      await handleExitGroup(
+                        currentUser?.id as number,
+                        group.id
+                      );
                     }
                   }}
                 >
@@ -346,7 +366,7 @@ const GroupInfo = ({ group }: { group: Group }) => {
                   type="button"
                   className="bg-red-400 px-3 py-2 rounded-md font-bold hover:cursor-pointer"
                   onClick={() => {
-                    handleExitGroup(currentUser?.id as number, group.id)
+                    handleExitGroup(currentUser?.id as number, group.id);
                   }}
                 >
                   Confirm and Exit
