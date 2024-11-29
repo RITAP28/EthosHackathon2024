@@ -51,6 +51,7 @@ enum GroupRole {
 }
 
 wss.on("connection", async function connection(ws: ExtendedWebsocket) {
+  ws.groups = []; // initializing the groups array in the websocket
   ws.on("error", (error) => console.error(error));
 
   ws.on("message", async (message: string) => {
@@ -78,10 +79,50 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
 
             console.log(`User with email ${decodedToken.email} has connected`);
 
+            // putting all the groups in which the user is a member or an admin, in the user's socket
+            const groups = await prisma.group.findMany({
+              where: {
+                members: {
+                  some: {
+                    userId: ws.user.id,
+                  },
+                },
+              },
+              include: {
+                members: true
+              }
+            });
+
+            // transforming the groups to the format of ExtendedSocketGroups
+            const transformedGroups = groups.map((group) => ({
+              id: group.id,
+              name: group.name,
+              description: group.description || null,
+              totalMembers: group.totalMembers,
+              members: group.members.map((member) => ({
+                id: member.id,
+                name: member.name,
+                email: member.email,
+                role: member.role as GroupRole,
+                joinedAt: member.joinedAt,
+                userId: member.userId,
+                groupId: member.groupId ?? undefined
+              })),
+              createdAt: group.createdAt,
+              updatedAt: group.updatedAt,
+              ownerId: group.ownerId || null,
+              latestText: group.latestText || null,
+              latestTextSentAt: group.latestTextSentAt || null,
+              latestTextSentById: group.latestTextSentById || null,
+            }));
+
+            ws.groups.push(...transformedGroups);
+
             ws.send(
               JSON.stringify({
                 message: `Welcome to the chat, ${decodedToken.email}`,
                 user: ws.user,
+                groups: ws.groups
               })
             );
           } else {
@@ -646,10 +687,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         ws.groups.forEach(async (group) => {
           if (group.id === targetGroup.id) {
             console.log(`Target Group received from the client: `, group.name);
-            console.log(
-              "Group name in the socket of user: ",
-              group.name
-            );
+            console.log("Group name in the socket of user: ", group.name);
 
             const allMembers = targetGroup.members as Member[];
             console.log("All Members including the sender: ", allMembers);
@@ -671,14 +709,14 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               where: {
                 id_name: {
                   id: group.id,
-                  name: group.name
-                }
+                  name: group.name,
+                },
               },
               data: {
                 latestText: textMetadata,
                 latestTextSentAt: new Date(Date.now()),
-                latestTextSentById: senderId
-              }
+                latestTextSentById: senderId,
+              },
             });
 
             // broadcast the message to all the members
