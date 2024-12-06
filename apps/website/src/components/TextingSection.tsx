@@ -41,7 +41,9 @@ const TextingSection = ({
   displayIndividualChats,
   groups,
   loadingGroups,
-  handleGetGroups
+  handleGetGroups,
+  groupChatHistory,
+  setGroupChatHistory
 }: {
   token: string;
   latestText: latestTextWithUser;
@@ -53,7 +55,9 @@ const TextingSection = ({
   displayIndividualChats: boolean;
   groups: Group[];
   loadingGroups: boolean;
-  handleGetGroups: () => Promise<void>
+  handleGetGroups: () => Promise<void>;
+  groupChatHistory: GroupChatHistory[];
+  setGroupChatHistory: React.Dispatch<React.SetStateAction<GroupChatHistory[]>>
 }) => {
   console.log(token);
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
@@ -79,9 +83,6 @@ const TextingSection = ({
 
   // states for group window
   const [groupChat, setGroupChat] = useState<Group | null>(null);
-  const [groupChatHistory, setGroupChatHistory] = useState<GroupChatHistory[]>(
-    []
-  );
 
   // states for chat partners
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
@@ -473,6 +474,7 @@ const TextingSection = ({
   ) => {
     try {
       if (ws && ws.OPEN) {
+        console.log("Message successfully sent to the group");
         ws.send(
           JSON.stringify({
             action: "send-group-message",
@@ -662,7 +664,7 @@ const TextingSection = ({
         ws.onmessage = null;
       }
     };
-  }, [ws, toast, currentChat, currentUser, setChatHistory, setLatestText]);
+  }, [ws, toast, currentChat, currentUser, setChatHistory, setLatestText, setGroupChatHistory]);
 
   const handleCreateGroup = async () => {
     setGroupCreationLoading(true);

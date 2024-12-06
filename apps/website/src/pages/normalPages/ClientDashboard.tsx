@@ -19,7 +19,7 @@ import {
   AccessTokenRefreshSuccess,
   LogoutSuccess,
 } from "../../redux/slices/user.slice";
-import { ChatHistory, Group, latestTextWithUser } from "../../lib/interface";
+import { ChatHistory, Group, GroupChatHistory, latestTextWithUser } from "../../lib/interface";
 
 const ClientDashboard = () => {
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
@@ -41,6 +41,9 @@ const ClientDashboard = () => {
   const [displayGroups, setDisplayGroups] = useState<boolean>(false);
   const [loadingGroups, setLoadingGroups] = useState<boolean>(false);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [groupChatHistory, setGroupChatHistory] = useState<GroupChatHistory[]>(
+    []
+  );
 
   const getToken = useCallback(
     async (userId: number) => {
@@ -228,6 +231,28 @@ const ClientDashboard = () => {
             isClosable: true,
             position: "top-right",
           });
+        } else if (data.action === "receive-group-message") {
+          console.log("Received message from group: ", data.message);
+          setGroupChatHistory((prevChats) => [
+            ...prevChats,
+            {
+              groupId: data.group.id,
+              groupName: data.group.name,
+              senderId: Number(data.from.id),
+              senderName: String(data.from.name),
+              senderEmail: String(data.from.email),
+              textMetadata: data.message,
+              sentAt: data.sentAt,
+            },
+          ]);
+          toast({
+            title: `Received a message in the group ${data.group.name}`,
+            description: `${data.from.name}: ${data.message}`,
+            status: "success",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right",
+          });
         }
       };
 
@@ -343,6 +368,8 @@ const ClientDashboard = () => {
               groups={groups}
               loadingGroups={loadingGroups}
               handleGetGroups={handleGetGroups}
+              groupChatHistory={groupChatHistory}
+              setGroupChatHistory={setGroupChatHistory}
             />
           </div>
         </>
