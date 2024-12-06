@@ -19,6 +19,7 @@ import {
   getUndeliveredMessages,
   getUserByEmail,
 } from "./controller/chat.controller";
+import { createLogger } from "../../shared/logger";
 
 dotenv.config();
 
@@ -50,6 +51,8 @@ enum GroupRole {
   MEMBER = "MEMBER",
 }
 
+const logger = createLogger("messaging-service");
+
 wss.on("connection", async function connection(ws: ExtendedWebsocket) {
   ws.groups = []; // initializing the groups array in the websocket
   ws.on("error", (error) => console.error(error));
@@ -57,6 +60,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
   ws.on("message", async (message: string) => {
     try {
       const parsedMessage = JSON.parse(message);
+      logger.info('Received Message', {
+        action: parsedMessage.action
+      });
       console.log("parsedMessage: ", parsedMessage);
 
       // first testing and authenticating the token provided by the primary client
@@ -123,6 +129,10 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                 groups: ws.groups,
               })
             );
+            logger.info('Sent Welcome Message', {
+              action: 'first-socket-authentication',
+              userId: ws.user.id
+            });
           } else {
             console.log("Token does not contain required fields");
             ws.send(
