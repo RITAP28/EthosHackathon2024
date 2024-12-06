@@ -1,6 +1,6 @@
 import express from 'express';
-import { getCurrentUser, readToken, refreshAccessToken, UserLoginFunction, UserLogoutFunction, UserRegisterFunction } from '../controllers/user.auth';
-import { getChatPartnersFromDB, getDetailsAboutChatPartner, getSpecificChatPartner, getUsersFromDB, insertingChatPartnerintoDB, retrieveChats } from '../controllers/user.actions';
+import { getCurrentUser, readToken, refreshAccessToken, UserLoginFunction, UserLogoutFunction, UserRegisterFunction } from '../auth/user.auth';
+import { getChatPartnersFromDB, getDetailsAboutChatPartner, getSpecificChatPartner, getUsersFromDB, insertingChatPartnerintoDB, retrieveChats } from '../controllers/user.controller';
 import { isAuthenticated } from '../middlewares/auth.middleware';
 
 export default (router: express.Router) => {

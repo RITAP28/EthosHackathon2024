@@ -1,6 +1,6 @@
 import express from 'express';
 import { isAuthenticated } from '../middlewares/auth.middleware';
-import { adminExitGroup, getGroupChatHistory, getGroupMembers, getGroupOwner, getGroupsForUser, makeAdminBeforeExiting } from '../controllers/user.actions';
+import { adminExitGroup, getGroupChatHistory, getGroupMembers, getGroupOwner, getGroupsForUser, makeAdminBeforeExiting } from '../controllers/user.controller';
 
 
 export default (router: express.Router) => {
