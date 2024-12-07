@@ -134,7 +134,10 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               userId: ws.user.id
             });
           } else {
-            console.log("Token does not contain required fields");
+            logger.error('Token does not contain required fields', {
+              action: 'first-socket-authentication',
+              errorMessage: 'Authentication failed'
+            });
             ws.send(
               JSON.stringify({
                 message: "Authentication failed",
@@ -145,7 +148,10 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             return;
           }
         } catch (error) {
-          console.error("Token verification failed: ", error);
+          logger.error('Token verification failed', {
+            action: 'first-socket-authentication',
+            errorMessage: 'Authentication failed',
+          });
           ws.send(
             JSON.stringify({
               message: "Authentication failed",
@@ -298,17 +304,29 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             targetUserSocket.chatPartner.user.email
           );
 
+          // info logger
+          logger.info(`${targetEmail} connected`, {
+            action: 'start-chat'
+          });
+
           ws.send(
             JSON.stringify({
               message: `${targetEmail} connected`,
             })
           );
+
           targetUserSocket.send(
             JSON.stringify({
               message: `${ws.user.email} connected`,
             })
           );
         } else {
+
+          // info logger
+          logger.info(`${targetEmail} is offline, but you can still send messages`, {
+            action: 'start-chat'
+          });
+
           ws.send(
             JSON.stringify({
               message: `${targetEmail} is offline, but you can still send messages`,
@@ -323,6 +341,11 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           where: {
             senderEmail: ws.user.email,
           },
+        });
+
+        // info logger
+        logger.info(`Chat partners fetched successfully for ${ws.user.name}`, {
+          action: 'fetch-chat-partners'
         });
         ws.send(
           JSON.stringify({
@@ -418,6 +441,10 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             console.log("new group variable filled up: ", newGroup);
             ws.groups.push(newGroup);
 
+            // info logger
+            logger.info('Group created successfully', {
+              action: 'create-group'
+            });
             ws.send(
               JSON.stringify({
                 message: `Group created successfully`,
@@ -522,9 +549,11 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
                       });
                     }
                   } else {
-                    console.log(
-                      "Client is offline, meaning that he/she is not connected to websocket"
-                    );
+                    // error logger
+                    logger.error('Offline client', {
+                      action: 'create-group',
+                      errorMessage: 'Client is not connected to websocket'
+                    });
                     ws.send(
                       JSON.stringify({
                         message: "Client not connected to websocket",
@@ -535,7 +564,11 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               }
             });
           } else {
-            console.log("Group creation failed");
+            // error logger
+            logger.error('Group creation failed', {
+              action: 'create-group',
+              errorMessage: 'Group creation failed by transaction'
+            });
             ws.send(
               JSON.stringify({
                 message: "group creation failed by transaction",
@@ -655,9 +688,11 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             })
           );
         } else {
-          console.log(
-            `Chat Partner ${chatPartnerEmail} not matching with the one in the socket`
-          );
+          // error logger
+          logger.error(`Chat Partner ${chatPartnerEmail} not matching with the one in the socket`, {
+            action: 'send-message',
+            errorMessage: 'Chat partner mismatch'
+          })
           ws.send(
             JSON.stringify({
               message: "Chat Partner not matching with the one in the socket",
@@ -668,7 +703,12 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         }
       } else if (parsedMessage.action === "receive-message") {
         const senderEmail = parsedMessage.from as string;
-        console.log("receive-message sender email: ", senderEmail);
+        // info logger
+        logger.info(`Received message from ${senderEmail} successfully`, {
+          action: 'receive-message',
+          receiver: ws.user.email,
+          sender: senderEmail
+        });
         ws.send(
           JSON.stringify({
             message: `Received message from ${senderEmail} successfully`,
@@ -679,7 +719,6 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             receivedAt: new Date(Date.now()),
           })
         );
-        console.log(`Received message from ${senderEmail}`);
       }
 
       // for actions regarding groups
@@ -699,8 +738,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
         console.log("sender id: ", senderId);
         console.log("text metadata: ", textMetadata);
 
-        // Create message in database
-        const createdMessage = await prisma.groupChat.create({
+        try {
+          // Create message in database
+        await prisma.groupChat.create({
           data: {
             groupId: Number(targetGroup.id),
             groupName: String(targetGroup.name),
@@ -794,6 +834,12 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             }
           }
         }
+        } catch (error) {
+          logger.error('Error sending a text to the group', {
+            action: 'send-group-message',
+            errorMessage: error
+          })
+        }
       } else if (parsedMessage.action === "receive-group-message") {
         try {
           console.log(
@@ -815,11 +861,18 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             `Server successfully notified the client ${ws.user.name} of the message sent in the group ${parsedMessage.groupName}`
           );
         } catch (error) {
-          console.log("Error receiving a text from a group: ", error);
+          logger.error('Error receiving a text from a group', {
+            action: 'receive-group-message',
+            errorMessage: error
+          });
         }
       }
     } catch (error) {
-      console.error("Websocker error: ", error);
+      // error logger
+      logger.error('Websocket error', {
+        action: 'websocket-connection-initiation',
+        errorMessage: 'An error occurred while processing the message'
+      })
       ws.send(
         JSON.stringify({
           message: `An error occurred while processing the message`,
