@@ -351,11 +351,14 @@ export async function getGroupOwner(req: Request, res: Response) {
 
 export async function getGroupMembers(req: Request, res: Response) {
   try {
-    const { groupId } = req.query;
+    const { groupId, adminId } = req.query;
     const groupMembers = await prisma.member.findMany({
       where: {
         groupId: Number(groupId),
-      },
+        userId: {
+          not: Number(adminId)
+        }
+      }
     });
     return res.status(200).json({
       success: true,

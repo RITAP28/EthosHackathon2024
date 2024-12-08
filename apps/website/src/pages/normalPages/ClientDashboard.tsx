@@ -253,6 +253,16 @@ const ClientDashboard = () => {
             isClosable: true,
             position: "top-right",
           });
+        } else if (data.action === "admin-change-and-exit-group") {
+          console.log("Received a message in the group: ", data.message);
+          toast({
+            title: data.title,
+            description: data.message,
+            status: "info",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right"
+          });
         }
       };
 

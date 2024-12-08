@@ -12,7 +12,9 @@ import {
   ModalBody,
   useDisclosure,
   Button,
+  useToast,
 } from "@chakra-ui/react";
+import { useWebSocket } from "../hooks/UseWebsocket";
 
 interface IGroupOwner {
   name: string;
@@ -37,8 +39,9 @@ const GroupInfo = ({
   setResizeWidth: React.Dispatch<React.SetStateAction<number>>;
   handleGetGroups: () => Promise<void>;
 }) => {
+  const ws = useWebSocket();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  //   const toast = useToast();
+  const toast = useToast();
   const { currentUser } = useAppSelector((state) => state.user);
 
   const [exitGroupModal, setExitGroupModal] = useState<boolean>(false);
@@ -47,8 +50,11 @@ const GroupInfo = ({
 
   const [owner, setOwner] = useState<IGroupOwner | null>(null);
 
+  // loading states
   const [groupMembersLoading, setGroupMembersLoading] =
     useState<boolean>(false);
+  const [adminExitLoading, setAdminExitLoading] = useState<boolean>(false);
+  
   const [groupMembers, setGroupMembers] = useState<Members[]>([]);
   const [selectedAdmin, setSelectedAdmin] = useState<Members | null>(null);
 
@@ -118,8 +124,7 @@ const GroupInfo = ({
       try {
         const groupMembersResponse = await axios.get(
           `${import.meta.env.VITE_BASE_URL}/get/group/members?groupId=${
-            group.id
-          }`,
+            group.id}&adminId=${currentUser?.id}`,
           {
             withCredentials: true,
             headers: {
@@ -138,7 +143,7 @@ const GroupInfo = ({
       }
       setGroupMembersLoading(false);
     },
-    [accessToken]
+    [accessToken, currentUser?.id]
   );
 
   useEffect(() => {
@@ -147,7 +152,8 @@ const GroupInfo = ({
     }
   }, [handleGetMembers, group, makeSomeoneAdminBeforeExiting]);
 
-  const handleExitGroup = async (userId: number, groupId: number) => {
+  const handleAdminExitGroup = async (userId: number, groupId: number) => {
+    setAdminExitLoading(true);
     try {
       console.log("selectedAdmin: ", selectedAdmin);
       await handleMakeAdmin(selectedAdmin?.userId as number, group.id);
@@ -173,13 +179,51 @@ const GroupInfo = ({
         `Updated Members of ${group.name}: `,
         exitGroupAction.data.updatedMembers
       );
+
+      // updating the information in the websockets
+      if (ws && ws.OPEN) {
+        ws.send(
+          JSON.stringify({
+            action: "admin-change-and-exit-group",
+            newAdmin: selectedAdmin,
+            oldAdmin: currentUser,
+            group: group
+          })
+        );
+
+        ws.onclose = () => {
+          console.log("Websocket connection closed");
+          toast({
+            title: "Websocket connection closed",
+            description: "Now you are no longer connected to our servers",
+            status: "error",
+            duration: 3000,
+            position: "top-right",
+            isClosable: true
+          })
+        };
+
+        ws.onerror = () => {
+          console.error("Websocket connection error");
+          toast({
+            title: `WebSocket connection Error`,
+            description: `Something went wrong with websockets`,
+            status: "error",
+            duration: 3000,
+            position: "top-right",
+            isClosable: true,
+          });
+        }
+      }
+
+
       setGroupChat(null);
       setGroupWindow(null);
       setShowGroupInfo(false);
       setResizeWidth(75);
+      setAdminExitLoading(false);
       await handleGetGroups();
       onClose();
-      // await handleRefreshGroups();
     } catch (error) {
       console.error("Error  while exiting groups: ", error);
     }
@@ -226,8 +270,11 @@ const GroupInfo = ({
                   </div>
                 </>
               ) : (
-                <div className="w-full flex flex-row text-black font-bold">
-                  {member.name}
+                <div className="w-full flex flex-row justify-between text-black font-bold">
+                  <div className="text-lg flex items-center">
+                    {currentUser?.name === member.name ? "You" : member.name}
+                  </div>
+                  <div className="text-sm flex items-center">{member.email}</div>
                 </div>
               )}
             </div>
@@ -289,7 +336,6 @@ const GroupInfo = ({
                   type="button"
                   className="bg-red-400 px-3 py-2 rounded-md font-bold hover:cursor-pointer"
                   onClick={async () => {
-                    console.log("Clicked yes");
                     if (adminArray.length === 1) {
                       // another modal to make someone else the admin
                       console.log(
@@ -298,14 +344,23 @@ const GroupInfo = ({
                       setMakeSomeoneAdminBeforeExiting(true);
                     } else {
                       // direct exit
-                      await handleExitGroup(
+                      await handleAdminExitGroup(
                         currentUser?.id as number,
                         group.id
                       );
+                      toast({
+                        title: "Group Exited Successfully",
+                        description: `You have exited the group ${group.name}`,
+                        status: "success",
+                        duration: 4000,
+                        isClosable: true,
+                        position: "top-right"
+                      });
                     }
                   }}
+                  disabled={adminExitLoading}
                 >
-                  Yes
+                  {adminExitLoading ? "Exiting group..." : "Yes"}
                 </button>
               </ModalFooter>
             </ModalContent>
@@ -368,10 +423,18 @@ const GroupInfo = ({
                   type="button"
                   className="bg-red-400 px-3 py-2 rounded-md font-bold hover:cursor-pointer"
                   onClick={() => {
-                    handleExitGroup(currentUser?.id as number, group.id);
+                    handleAdminExitGroup(currentUser?.id as number, group.id);
+                    toast({
+                      title: "Group Exited Successfully",
+                      description: `${selectedAdmin?.name} has been made admin and you have exited the group`,
+                      status: "success",
+                      duration: 4000,
+                      position: "top-right"
+                    });
                   }}
+                  disabled={adminExitLoading}
                 >
-                  Confirm and Exit
+                  {adminExitLoading ? "Exiting group..." : "Confirm and Exit"}
                 </button>
               </ModalFooter>
             </ModalContent>

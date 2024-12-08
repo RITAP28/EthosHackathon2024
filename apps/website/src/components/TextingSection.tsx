@@ -398,7 +398,7 @@ const TextingSection = ({
           toast({
             title: `WebSocket connection closed`,
             description: `Now you are no longer connected to our servers`,
-            status: "warning",
+            status: "error",
             duration: 4000,
             isClosable: true,
           });
