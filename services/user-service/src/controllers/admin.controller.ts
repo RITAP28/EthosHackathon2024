@@ -223,3 +223,5 @@ export async function makeAdminBeforeExiting(req: Request, res: Response) {
     });
   }
 }
+
+// function to kick out a member

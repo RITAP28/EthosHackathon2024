@@ -52,6 +52,7 @@ export interface Group {
     latestText?: string;
     latestTextSentAt?: Date;
     latestTextSentById?: number;
+    // latestTextSentBy?: User;
 }
 
 export interface Members {

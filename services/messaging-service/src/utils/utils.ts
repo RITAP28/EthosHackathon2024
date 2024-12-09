@@ -70,6 +70,7 @@ export interface ExtendedSocketGroups {
   latestText: string | null;
   latestTextSentAt: Date | null;
   latestTextSentById: number | null;
+  // latestTextSentBy: User | null;
 }
 
 export interface ExtendedWebsocket extends WebSocket {

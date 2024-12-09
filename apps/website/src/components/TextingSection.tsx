@@ -1,15 +1,8 @@
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ChatHistory,
   ChatPartner,
@@ -21,14 +14,13 @@ import {
 } from "../lib/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
-import { FaUser } from "react-icons/fa";
-import { CiLock } from "react-icons/ci";
-import { FcVideoCall } from "react-icons/fc";
-import { CiMenuKebab } from "react-icons/ci";
-import { GoPaperclip } from "react-icons/go";
-import { MdKeyboardVoice } from "react-icons/md";
-import { IoSend } from "react-icons/io5";
-import GroupInfo from "./GroupInfo";
+import GroupChatWindow from "./TextingSection/GroupChat/GroupChatWindow";
+import IndividualChatWindow from "./TextingSection/IndividualChat/IndividualChatWindow";
+import NormalWindow from "./TextingSection/NormalWindow";
+import GroupsSidePanel from "./TextingSection/GroupChat/GroupsSidePanel";
+import ChatSidePanel from "./TextingSection/IndividualChat/ChatSidePanel";
+import SearchUsersModal from "./TextingSection/Modals/SearchUsersModal";
+import CreateGroupModal from "./TextingSection/Modals/CreateGroupModal";
 
 const TextingSection = ({
   token,
@@ -43,7 +35,7 @@ const TextingSection = ({
   loadingGroups,
   handleGetGroups,
   groupChatHistory,
-  setGroupChatHistory
+  setGroupChatHistory,
 }: {
   token: string;
   latestText: latestTextWithUser;
@@ -57,7 +49,7 @@ const TextingSection = ({
   loadingGroups: boolean;
   handleGetGroups: () => Promise<void>;
   groupChatHistory: GroupChatHistory[];
-  setGroupChatHistory: React.Dispatch<React.SetStateAction<GroupChatHistory[]>>
+  setGroupChatHistory: React.Dispatch<React.SetStateAction<GroupChatHistory[]>>;
 }) => {
   console.log(token);
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
@@ -470,7 +462,7 @@ const TextingSection = ({
 
   const handleGroupSendButtonClick = async (
     group: Group,
-    textMetadata: string,
+    textMetadata: string
   ) => {
     try {
       if (ws && ws.OPEN) {
@@ -480,7 +472,7 @@ const TextingSection = ({
             action: "send-group-message",
             targetGroup: group,
             textMetadata: textMetadata,
-            senderId: Number(currentUser?.id)
+            senderId: Number(currentUser?.id),
           })
         );
         setGroupChatHistory((prevChats) => [
@@ -664,7 +656,15 @@ const TextingSection = ({
         ws.onmessage = null;
       }
     };
-  }, [ws, toast, currentChat, currentUser, setChatHistory, setLatestText, setGroupChatHistory]);
+  }, [
+    ws,
+    toast,
+    currentChat,
+    currentUser,
+    setChatHistory,
+    setLatestText,
+    setGroupChatHistory,
+  ]);
 
   const handleCreateGroup = async () => {
     setGroupCreationLoading(true);
@@ -721,13 +721,15 @@ const TextingSection = ({
               position: "top-right",
             });
           } else if (data.action === "joined-group") {
-            console.log(`You were put in a group named ${data.groupName} by ${data.admin}`);
+            console.log(
+              `You were put in a group named ${data.groupName} by ${data.admin}`
+            );
             toast({
               title: `You joined a group ${data.groupName}`,
               status: "success",
               duration: 2000,
               isClosable: true,
-              position: "top-right"
+              position: "top-right",
             });
           }
         };
@@ -852,346 +854,61 @@ const TextingSection = ({
               />
             </div>
             <div className="w-full flex flex-col gap-2 justify-center items-center pt-2">
-              {displayIndividualChats &&
-                (loadingPartners
-                  ? "Loading your partners..."
-                  : chatPartners.length > 0
-                  ? chatPartners.map((partner, index) => {
-                      // setLastChat(partner.latestChat);
-                      return (
-                        <div
-                          className="w-[90%] bg-slate-400 flex flex-row py-2 rounded-xl hover:bg-slate-500 hover:cursor-pointer transition ease-in-out duration-200"
-                          key={index}
-                          onClick={() => {
-                            setGroupWindow(false);
-                            handleChatButtonClick(
-                              partner.chatPartnerId,
-                              partner.chatPartnerName,
-                              partner.chatPartnerEmail
-                            );
-                          }}
-                        >
-                          <div className="w-[25%] h-full flex justify-center items-center">
-                            <div className="bg-slate-300 p-3 rounded-xl">
-                              <FaUser className="text-[2rem]" />
-                            </div>
-                          </div>
-                          <div className="w-[75%] flex flex-col">
-                            <div className="w-full h-[40%] flex flex-row justify-between pr-3">
-                              <div>{partner.chatPartnerName}</div>
-                              <div className="text-[0.7rem]">
-                                {latestText.sentAt === partner.updatedAt
-                                  ? handleDateFormat(latestText.sentAt)
-                                  : partner.updatedAt &&
-                                    handleDateFormat(partner.updatedAt)}
-                              </div>
-                            </div>
-                            <div className="w-full h-[60%] whitespace-nowrap overflow-hidden text-ellipsis pr-2">
-                              {latestText.sentBy === partner.chatPartnerEmail
-                                ? latestText.latestText
-                                : partner.latestChat}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  : "Users you chat with will appear here.")}
-              {displayGroups &&
-                (loadingGroups ? (
-                  "Loading your groups"
-                ) : (
-                  <div className="w-full flex flex-col">
-                    <div className="w-full flex justify-center">
-                      <button
-                        type="button"
-                        className="px-2 py-2 rounded-md bg-slate-400 text-black transition ease-in-out duration-200 hover:bg-slate-200 hover:cursor-pointer font-Philosopher"
-                        onClick={() => {
-                          setCreateGroupModal(true);
-                          setSearchUsersLoading(false);
-                          onOpen();
-                          getUsersFromDB();
-                        }}
-                      >
-                        Create group
-                      </button>
-                    </div>
-                    {groups.length > 0 ? (
-                      <div className="w-full flex flex-col gap-2 items-center pt-3">
-                        {groups.map((group, index) => (
-                          <div
-                            className="w-[90%] bg-slate-200 rounded-md px-2 py-2 hover:cursor-pointer transition duration-150 ease-in-out hover:bg-gray-400 font-Philosopher font-bold"
-                            key={index}
-                            onClick={() => {
-                              console.log("Group Details: ", group);
-                              handleClickOnAnyGroup(group);
-                            }}
-                          >
-                            <div className="">{group.name}</div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="w-full flex justify-center">
-                        <div className="w-[80%]">
-                          Sorry, you are not a part of any group
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+              {displayIndividualChats && (
+                <ChatSidePanel
+                  loadingPartners={loadingPartners}
+                  chatPartners={chatPartners}
+                  setGroupWindow={setGroupWindow}
+                  handleChatButtonClick={handleChatButtonClick}
+                  latestText={latestText}
+                  handleDateFormat={handleDateFormat}
+                />
+              )}
+              {displayGroups && (
+                <GroupsSidePanel
+                  loadingGroups={loadingGroups}
+                  setCreateGroupModal={setCreateGroupModal}
+                  setSearchUsersLoading={setSearchUsersLoading}
+                  onOpen={onOpen}
+                  getUsersFromDB={getUsersFromDB}
+                  groups={groups}
+                  handleClickOnAnyGroup={handleClickOnAnyGroup}
+                />
+              )}
             </div>
           </div>
           {loadingWindow
             ? "Loading Chat Window..."
-            : !chatWindow &&
-              !groupWindow && (
-                <div className="w-[75%] h-[100%] bg-slate-400 flex flex-col rounded-r-2xl">
-                  <div className="w-full h-[90%] flex justify-center items-center">
-                    <p className="font-bold font-Philosopher">
-                      This is your alternative to the <br /> Boring Whats-App
-                      you have been using!
-                    </p>
-                  </div>
-                  <div className="w-full h-[10%] flex justify-center">
-                    <p className="flex items-center gap-2 font-semibold font-Philosopher">
-                      <CiLock />
-                      Your personal messages are end-to-end encrypted
-                    </p>
-                  </div>
-                </div>
-              )}
+            : !chatWindow && !groupWindow && <NormalWindow />}
           {chatWindow && currentChat !== null && currentChatName !== null && (
-            <div className="w-[75%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between">
-              {/* upper bar containing the name of the receiver */}
-              <div className="w-full h-[10%] flex flex-row bg-slate-500 rounded-tr-2xl">
-                <div className="w-[10%] flex justify-center items-center">
-                  <div className="p-3 bg-slate-400 rounded-xl">
-                    <FaUser className="text-[2rem]" />
-                  </div>
-                </div>
-                <div className="w-[60%] flex justify-start items-center">
-                  <p className="text-xl font-Philosopher font-semibold">
-                    {currentChatName}
-                  </p>
-                </div>
-                <div className="w-[30%] flex flex-row justify-end items-center gap-4 pr-4">
-                  <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
-                    <FcVideoCall className="text-[2rem]" />
-                  </div>
-                  <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
-                    <CiMenuKebab className="text-[1.8rem]" />
-                  </div>
-                </div>
-              </div>
-              {/* space for texts to appear */}
-              <div
-                className="w-full h-[80%] flex-col-reverse overflow-y-auto p-4 bg-slate-400"
-                id="message-container"
-              >
-                {loadingChatHistory
-                  ? "Loading your chats, please wait..."
-                  : chatHistory.map((chat, index) =>
-                      chat.senderEmail === currentUser?.email ? (
-                        <div className="flex justify-end pt-2" key={index}>
-                          <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
-                            <div className="w-full">
-                              <p className="text-white">{chat.textMetadata}</p>
-                            </div>
-                            <div className="w-full flex justify-end text-[0.7rem]">
-                              {handleDateFormat(chat.sentAt)}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-start pt-2" key={index}>
-                          <div className="p-3 bg-blue-500 rounded-lg max-w-[70%] flex flex-col">
-                            <div className="w-full">
-                              <p className="text-white">{chat.textMetadata}</p>
-                            </div>
-                            <div className="w-full flex justify-end text-[0.7rem]">
-                              {handleDateFormat(chat.sentAt)}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    )}
-              </div>
-              {/* lower bar containing the text input for sending the texts */}
-              <div className="w-full bg-slate-500 flex flex-row h-[3.5rem]">
-                <div className="w-[5%] flex justify-center items-center">
-                  <GoPaperclip className="text-[1.5rem]" />
-                </div>
-                <div className="w-[80%] flex justify-start items-center">
-                  <div className="w-[90%]">
-                    <input
-                      type="text"
-                      name=""
-                      id=""
-                      className="w-full px-3 py-2 h-[2rem] bg-slate-200 font-Poppins rounded-lg"
-                      placeholder="Your Message"
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                        e.preventDefault();
-                        setTextMessage(e.target.value);
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="w-[15%] flex flex-row">
-                  <div className="basis-1/2 flex justify-center items-center">
-                    <div className="p-3 bg-slate-600 rounded-full hover:cursor-pointer hover:bg-red-400">
-                      <MdKeyboardVoice className="text-[1.5rem]" />
-                    </div>
-                  </div>
-                  <div className="basis-1/2 flex justify-center items-center">
-                    <div
-                      className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full"
-                      onClick={() => {
-                        handleSendButtonClick(
-                          currentChat?.receiverId as number,
-                          currentChat?.receiverName as string,
-                          currentChat?.receiverEmail as string
-                        );
-                      }}
-                    >
-                      <IoSend className="text-[1.5rem]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <IndividualChatWindow
+              currentChatName={currentChatName}
+              loadingChatHistory={loadingChatHistory}
+              chatHistory={chatHistory}
+              handleDateFormat={handleDateFormat}
+              setTextMessage={setTextMessage}
+              handleSendButtonClick={handleSendButtonClick}
+              currentChat={currentChat}
+            />
           )}
           {groupWindow && groupChat && (
             <>
-              <div
-                className={`w-[${resizeWidth}%] h-[100%] bg-slate-400 rounded-r-2xl flex flex-col justify-between`}
-              >
-                <div className="w-full h-[10%] flex flex-row bg-slate-500 rounded-tr-2xl">
-                  <div className="w-[10%] flex justify-center items-center">
-                    <div className="p-3 bg-slate-400 rounded-xl">
-                      <FaUser className="text-[2rem]" />
-                    </div>
-                  </div>
-                  <div className="w-[60%] flex justify-start items-center">
-                    <p
-                      className="text-xl font-Philosopher font-semibold hover:cursor-pointer"
-                      onClick={() => {
-                        if (resizeWidth === 75) {
-                          setResizeWidth(50);
-                          setShowGroupInfo(true);
-                        } else {
-                          setResizeWidth(75);
-                          setShowGroupInfo(false);
-                        }
-                      }}
-                    >
-                      {groupChat.name}
-                    </p>
-                  </div>
-                  <div className="w-[30%] flex flex-row justify-end items-center gap-4 pr-4">
-                    <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
-                      <FcVideoCall className="text-[2rem]" />
-                    </div>
-                    <div className="p-2 hover:cursor-pointer hover:bg-slate-400 transition ease-in-out duration-200 rounded-full">
-                      <CiMenuKebab className="text-[1.8rem]" />
-                    </div>
-                  </div>
-                </div>
-                {/* space for texts to appear */}
-                <div
-                  className="w-full h-[80%] flex-col-reverse overflow-y-auto p-4 bg-slate-400"
-                  id="message-container"
-                >
-                  {loadingChatHistory
-                    ? "Loading your chats, please wait..."
-                    : groupChatHistory.map((chat, index) =>
-                        chat.senderEmail === currentUser?.email ? (
-                          <div className="flex justify-end pt-2" key={index}>
-                            <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
-                              <div className="w-full font-Philosopher">You</div>
-                              <div className="w-full">
-                                <p className="text-white">
-                                  {chat.textMetadata}
-                                </p>
-                              </div>
-                              <div className="w-full flex justify-end text-[0.7rem]">
-                                {handleDateFormat(chat.sentAt)}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex justify-start pt-2" key={index}>
-                            <div className="p-3 bg-blue-500 rounded-lg max-w-[70%] flex flex-col">
-                              <div className="w-full font-Philosopher">
-                                {chat.senderName}
-                              </div>
-                              <div className="w-full">
-                                <p className="text-white">
-                                  {chat.textMetadata}
-                                </p>
-                              </div>
-                              <div className="w-full flex justify-end text-[0.7rem]">
-                                {handleDateFormat(chat.sentAt)}
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      )}
-                </div>
-                {/* lower bar containing the text input for sending the texts */}
-                <div className="w-full bg-slate-500 flex flex-row h-[3.5rem] rounded-br-2xl">
-                  <div className="w-[5%] flex justify-center items-center">
-                    <GoPaperclip className="text-[1.5rem]" />
-                  </div>
-                  <div className="w-[80%] flex justify-start items-center">
-                    <div className="w-[90%]">
-                      <input
-                        type="text"
-                        name=""
-                        id=""
-                        className="w-full px-3 py-2 h-[2rem] bg-slate-200 font-Poppins rounded-lg"
-                        placeholder="Your Message"
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                          e.preventDefault();
-                          setGroupTextMessage(e.target.value);
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="w-[15%] flex flex-row">
-                    <div className="basis-1/2 flex justify-center items-center">
-                      <div className="p-3 bg-slate-600 rounded-full hover:cursor-pointer hover:bg-red-400">
-                        <MdKeyboardVoice className="text-[1.5rem]" />
-                      </div>
-                    </div>
-                    <div className="basis-1/2 flex justify-center items-center">
-                      <div
-                        className="p-3 bg-slate-600 hover:cursor-pointer hover:bg-green-500 rounded-full"
-                        onClick={() => {
-                          handleGroupSendButtonClick(
-                            groupChat,
-                            groupTextMessage
-                          );
-                        }}
-                      >
-                        <IoSend className="text-[1.5rem]" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {resizeWidth === 50 && showGroupInfo && (
-                <div className=" ml-1 w-[25%] bg-slate-700 rounded-2xl py-2 px-2">
-                  <GroupInfo
-                    accessToken={accessToken}
-                    group={groupChat}
-                    setGroupWindow={setGroupWindow}
-                    setGroupChat={setGroupChat}
-                    setShowGroupInfo={setShowGroupInfo}
-                    setResizeWidth={setResizeWidth}
-                    handleGetGroups={handleGetGroups}
-                  />
-                </div>
-              )}
+              <GroupChatWindow
+                loadingChatHistory={loadingChatHistory}
+                groupChatHistory={groupChatHistory}
+                handleDateFormat={handleDateFormat}
+                resizeWidth={resizeWidth}
+                setResizeWidth={setResizeWidth}
+                setShowGroupInfo={setShowGroupInfo}
+                groupChat={groupChat}
+                setGroupTextMessage={setGroupTextMessage}
+                handleGroupSendButtonClick={handleGroupSendButtonClick}
+                groupTextMessage={groupTextMessage}
+                showGroupInfo={showGroupInfo}
+                setGroupWindow={setGroupWindow}
+                setGroupChat={setGroupChat}
+                handleGetGroups={handleGetGroups}
+              />
             </>
           )}
         </div>
@@ -1200,181 +917,34 @@ const TextingSection = ({
       {/* modal for searching users */}
       <div className="">
         {searchUsersLoading && (
-          <Modal isOpen={isOpen} onClose={onClose} isCentered size={"lg"}>
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>
-                <p className="font-Poppins">Search Users via email:</p>
-              </ModalHeader>
-              <ModalCloseButton />
-              <ModalBody>
-                {loading ? (
-                  "getting all users..."
-                ) : (
-                  <div className="w-full flex flex-col gap-2">
-                    {users &&
-                      users.map((user, index) => (
-                        <div
-                          className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
-                          key={index}
-                        >
-                          <div className="w-[20%] flex justify-center items-center">
-                            <div className="w-[60%] bg-slate-200 rounded-full flex justify-center items-center p-3">
-                              <FaUser className="w-7 h-7" />
-                            </div>
-                          </div>
-                          <div className="w-[60%] flex flex-col font-Poppins">
-                            <div className="w-full pl-4">
-                              <p className="font-bold">{user.name}</p>
-                            </div>
-                            <div className="w-full pl-4">
-                              <p className="">{user.email}</p>
-                            </div>
-                          </div>
-                          <div className="w-[20%] flex justify-center items-center">
-                            <button
-                              type="button"
-                              className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
-                              onClick={() => {
-                                handleChatButtonClick(
-                                  Number(user.id),
-                                  String(user.name),
-                                  user.email
-                                );
-                                insertingChatPartnerInDB(
-                                  currentUser?.id as number,
-                                  user.id as number,
-                                  currentUser?.name as string,
-                                  currentUser?.email as string,
-                                  user.name as string,
-                                  user.email
-                                );
-                              }}
-                            >
-                              Chat
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </ModalBody>
-
-              <ModalFooter>
-                <button
-                  type="button"
-                  className="px-4 py-1 rounded-md hover:cursor-pointer font-Poppins hover:bg-slate-200 transition duration-200 ease-in-out"
-                  onClick={onClose}
-                >
-                  Close
-                </button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
+          <SearchUsersModal
+            isOpen={isOpen}
+            onClose={onClose}
+            loading={loading}
+            users={users}
+            handleChatButtonClick={handleChatButtonClick}
+            insertingChatPartnerInDB={insertingChatPartnerInDB}
+          />
         )}
       </div>
 
       {/* modal for creating groups */}
       <div className="">
         {createGroupModal && (
-          <Modal isOpen={isOpen} onClose={onClose} isCentered size={"xl"}>
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>
-                <div className="w-full flex justify-center items-center">
-                  You are creating a group
-                </div>
-              </ModalHeader>
-              <ModalCloseButton />
-              <ModalBody className="bg-slate-200">
-                {loading ? (
-                  "getting all users..."
-                ) : (
-                  <div className="w-full flex flex-row">
-                    <div className="w-[40%] flex flex-col gap-2">
-                      <div className=""></div>
-                      <div className="w-full flex flex-row items-center">
-                        <div className="w-[90%]">
-                          <input
-                            type="text"
-                            name=""
-                            id="name"
-                            className="w-full bg-slate-400 placeholder:text-slate-200 px-2 py-1 rounded-md hover:cursor-pointer"
-                            placeholder="Name"
-                            onChange={(e) => {
-                              setGroupName(e.target.value);
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="w-full flex flex-row items-center">
-                        <div className="w-[90%]">
-                          <input
-                            type="text"
-                            name=""
-                            id="description"
-                            className="w-full bg-slate-400 placeholder:text-slate-200 px-2 py-1 rounded-md hover:cursor-pointer"
-                            placeholder="Description"
-                            onChange={(e) => {
-                              setGroupDescription(e.target.value);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="w-[60%] flex flex-col gap-2 overflow-y-auto max-h-[16rem]">
-                      {users &&
-                        users.map((user, index) => (
-                          <div
-                            className="w-full flex flex-row py-4 bg-slate-400 rounded-xl"
-                            key={index}
-                          >
-                            <div className="w-[60%] flex flex-col font-Poppins">
-                              <div className="w-full pl-4">
-                                <p className="font-bold">{user.name}</p>
-                              </div>
-                            </div>
-                            <div className="w-[40%] flex justify-center items-center">
-                              <button
-                                type="button"
-                                className="px-4 py-1 bg-neutral-900 transition ease-in-out duration-200 text-slate-400 rounded-md hover:cursor-pointer hover:text-white"
-                                onClick={() => {
-                                  handleAddUserInGroup(user);
-                                }}
-                              >
-                                {usersToAddInTheGroup.includes(user)
-                                  ? "Remove"
-                                  : "Add"}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </ModalBody>
-
-              <ModalFooter className="bg-slate-200">
-                <div className="w-full flex justify-center">
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-md hover:cursor-pointer bg-green-600 font-Philosopher transition ease-in-out duration-200 hover:bg-green-500 font-bold"
-                    onClick={() => {
-                      // handleCreateGroup();
-                      console.log("group name: ", groupName);
-                      console.log("group description: ", groupDescription);
-                      console.log("users to be added: ", usersToAddInTheGroup);
-                      handleCreateGroup();
-                    }}
-                  >
-                    {groupCreationLoading
-                      ? "Creating, Please Wait..."
-                      : "Create Group"}
-                  </button>
-                </div>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
+          <CreateGroupModal
+            isOpen={isOpen}
+            onClose={onClose}
+            loading={loading}
+            setGroupName={setGroupName}
+            setGroupDescription={setGroupDescription}
+            users={users}
+            handleAddUserInGroup={handleAddUserInGroup}
+            usersToAddInTheGroup={usersToAddInTheGroup}
+            groupName={groupName}
+            groupDescription={groupDescription}
+            handleCreateGroup={handleCreateGroup}
+            groupCreationLoading={groupCreationLoading}
+          />
         )}
       </div>
     </div>
