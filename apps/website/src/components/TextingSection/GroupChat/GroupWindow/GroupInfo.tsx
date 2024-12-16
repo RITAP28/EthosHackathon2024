@@ -1,7 +1,7 @@
 import axios from "axios";
-import { Group, Members } from "../lib/interface";
+import { Group, Members } from "../../../../lib/interface";
 import { FaUser } from "react-icons/fa";
-import { useAppSelector } from "../redux/hooks/hook";
+import { useAppSelector } from "../../../../redux/hooks/hook";
 import React, { SetStateAction, useCallback, useEffect, useState } from "react";
 import {
   Modal,
@@ -14,7 +14,7 @@ import {
   Button,
   useToast,
 } from "@chakra-ui/react";
-import { useWebSocket } from "../hooks/UseWebsocket";
+import { useWebSocket } from "../../../../hooks/UseWebsocket";
 
 interface IGroupOwner {
   name: string;
