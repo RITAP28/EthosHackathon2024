@@ -1,7 +1,7 @@
 import { GoPaperclip } from "react-icons/go";
 import { IoSend } from "react-icons/io5";
 import { MdKeyboardVoice } from "react-icons/md";
-import { CurrentChat } from "../../../../lib/interface";
+import { CurrentChat } from "../../../../utils/interface";
 
 const ChatInputArea = ({
     setTextMessage,

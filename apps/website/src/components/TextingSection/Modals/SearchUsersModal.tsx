@@ -7,7 +7,7 @@ import {
   ModalBody,
   ModalCloseButton,
 } from "@chakra-ui/react";
-import { User } from "../../../lib/interface";
+import { User } from "../../../utils/interface";
 import { FaUser } from "react-icons/fa";
 import { useAppSelector } from "../../../redux/hooks/hook";
 

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { ShootingStars } from "../../components/ui/ShootingStars";
 import { StarsBackground } from "../../components/ui/StarBackground";
-import { User } from "../../lib/interface";
+import { User } from "../../utils/interface";
 import { useToast } from "@chakra-ui/react";
-import { LoginSchema } from "../../lib/zodSchemas";
+import { LoginSchema } from "../../utils/zodSchemas";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { LoginSuccess } from "../../redux/slices/user.slice";

@@ -1,7 +1,7 @@
 import { CiMenuKebab } from "react-icons/ci";
 import { FaUser } from "react-icons/fa";
 import { FcVideoCall } from "react-icons/fc";
-import { Group } from "../../../../lib/interface";
+import { Group } from "../../../../utils/interface";
 
 const GroupHeader = ({
     resizeWidth,

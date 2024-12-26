@@ -1,4 +1,4 @@
-import { ChatHistory } from "../../../../lib/interface";
+import { ChatHistory } from "../../../../utils/interface";
 import { useAppSelector } from "../../../../redux/hooks/hook";
 
 const ChatScrollView = ({

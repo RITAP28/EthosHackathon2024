@@ -1,4 +1,4 @@
-import { GroupChatHistory } from "../../../../lib/interface";
+import { GroupChatHistory } from "../../../../utils/interface";
 import { useAppSelector } from "../../../../redux/hooks/hook";
 
 const GroupChatScrollView = ({

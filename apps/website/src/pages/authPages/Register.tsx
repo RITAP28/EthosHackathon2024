@@ -5,12 +5,12 @@ import { MdKeyboardVoice } from "react-icons/md";
 import { MdOutlineVideoCall } from "react-icons/md";
 import { FaLock } from "react-icons/fa";
 import React, { useState } from "react";
-import { User } from "../../lib/interface";
+import { User } from "../../utils/interface";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { RegistrationSuccess } from "../../redux/slices/user.slice";
 import { useToast } from "@chakra-ui/react";
-import { RegisterSchema } from "../../lib/zodSchemas";
+import { RegisterSchema } from "../../utils/zodSchemas";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Group, Members } from "../../../../lib/interface";
+import { Group, Members } from "../../../../utils/interface";
 import { FaUser } from "react-icons/fa";
 import { useAppSelector } from "../../../../redux/hooks/hook";
 import React, { SetStateAction, useCallback, useEffect, useState } from "react";

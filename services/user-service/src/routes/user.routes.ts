@@ -6,7 +6,7 @@ import { isAuthenticated } from '../middlewares/auth.middleware';
 export default (router: express.Router) => {
     router.post('/register', UserRegisterFunction);
     router.post('/login', UserLoginFunction);
-    router.post('/logout', isAuthenticated, UserLogoutFunction);
+    router.post('/api/v1/auth/logout', isAuthenticated, UserLogoutFunction);
 
     // route to generate access token with the help of refresh token
     router.post('/refresh', refreshAccessToken);

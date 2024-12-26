@@ -11,7 +11,7 @@ import {
   GroupChatHistory,
   latestTextWithUser,
   User,
-} from "../lib/interface";
+} from "../utils/interface";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks/hook";
 import GroupChatWindow from "./TextingSection/GroupChat/GroupChatWindow";
@@ -519,152 +519,152 @@ const TextingSection = ({
     }
   };
 
-  useEffect(() => {
-    if (ws && ws.OPEN) {
-      // fetching users from the database from the database via websockets
-      ws.onopen = () => {
-        console.log("websocket connection opened successfully.");
-        ws.send(
-          JSON.stringify({
-            action: "fetch-chat-partners",
-          })
-        );
-      };
+  // useEffect(() => {
+  //   if (ws && ws.OPEN) {
+  //     // fetching users from the database from the database via websockets
+  //     ws.onopen = () => {
+  //       console.log("websocket connection opened successfully.");
+  //       ws.send(
+  //         JSON.stringify({
+  //           action: "fetch-chat-partners",
+  //         })
+  //       );
+  //     };
 
-      ws.onmessage = (message) => {
-        const data = JSON.parse(message.data);
-        console.log(`Received message from the server: `, data);
+  //     ws.onmessage = (message) => {
+  //       const data = JSON.parse(message.data);
+  //       console.log(`Received message from the server: `, data);
 
-        if (data.action === `receive-message`) {
-          console.log(`message from ${data.from}: `, data.textMetadata);
-          setLatestText({
-            receivedBy: data.to,
-            sentBy: data.from,
-            latestText: data.textMetadata,
-            sentAt: data.sentAt,
-          });
-          setChatHistory((prevChats) => [
-            ...prevChats,
-            {
-              textMetadata: data.textMetadata,
-              senderEmail: data.from,
-              receiverEmail: data.to,
-              sentAt: data.sentAt,
-            },
-          ]);
-          toast({
-            title: `Received message from ${data.from} successfully`,
-            status: "success",
-            duration: 4000,
-            isClosable: true,
-            position: "top-right",
-          });
-        } else if (data.action === "send-message") {
-          setLatestText({
-            receivedBy: data.to,
-            sentBy: data.from,
-            latestText: data.textMetadata,
-            sentAt: data.sentAt,
-          });
-          setChatHistory((prevChats) => [
-            ...prevChats,
-            {
-              textMetadata: data.textMetadata,
-              senderEmail: data.from,
-              receiverEmail: data.to,
-              sentAt: data.sentAt,
-            },
-          ]);
-          toast({
-            title: `Message sent to ${data.to} successfully`,
-            status: "success",
-            duration: 4000,
-            isClosable: true,
-            position: "top-right",
-          });
-        } else if (
-          data.message === `Message sent to ${currentChat} successfully`
-        ) {
-          toast({
-            title: `Message sent successfully to ${currentChat}`,
-            status: "success",
-            duration: 4000,
-            isClosable: true,
-            position: "top-right",
-          });
-        } else if (
-          data.message ===
-          `Chat Partner not matching with the one in the socket`
-        ) {
-          toast({
-            title: `Chat Partner Email mismatch happened`,
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-            position: "top-right",
-          });
-          console.log("Chat Partner Email mismatch happened");
-          return;
-        } else if (
-          data.message ===
-          `All the chats have been fetched for ${currentUser?.email} successfully`
-        ) {
-          setChatPartnerViaSocket(data.chatPartners);
-          toast({
-            title: `All the chats have been fetched for ${currentUser?.email} successfully`,
-            status: "success",
-            duration: 4000,
-            isClosable: true,
-            position: "top-right",
-          });
-        } else if (data.action === "joined-group") {
-          toast({
-            title: data.title,
-            status: "success",
-            description: data.message,
-            isClosable: true,
-            position: "top-right",
-            duration: 400,
-          });
-        } else if (data.action === "receive-group-message") {
-          console.log("Received message from group: ", data.message);
-          setGroupChatHistory((prevChats) => [
-            ...prevChats,
-            {
-              groupId: data.targetGroup.id,
-              groupName: data.targetGroup.name,
-              senderId: Number(currentUser?.id),
-              senderName: String(currentUser?.name),
-              senderEmail: String(currentUser?.email),
-              textMetadata: data.message,
-              sentAt: data.sentAt,
-            },
-          ]);
-          toast({
-            title: `Received a message from ${data.targetGroup.name}`,
-            status: "success",
-            duration: 4000,
-            isClosable: true,
-            position: "top-right",
-          });
-        }
-      };
-    }
+  //       if (data.action === `receive-message`) {
+  //         console.log(`message from ${data.from}: `, data.textMetadata);
+  //         setLatestText({
+  //           receivedBy: data.to,
+  //           sentBy: data.from,
+  //           latestText: data.textMetadata,
+  //           sentAt: data.sentAt,
+  //         });
+  //         setChatHistory((prevChats) => [
+  //           ...prevChats,
+  //           {
+  //             textMetadata: data.textMetadata,
+  //             senderEmail: data.from,
+  //             receiverEmail: data.to,
+  //             sentAt: data.sentAt,
+  //           },
+  //         ]);
+  //         toast({
+  //           title: `Received message from ${data.from} successfully`,
+  //           status: "success",
+  //           duration: 4000,
+  //           isClosable: true,
+  //           position: "top-right",
+  //         });
+  //       } else if (data.action === "send-message") {
+  //         setLatestText({
+  //           receivedBy: data.to,
+  //           sentBy: data.from,
+  //           latestText: data.textMetadata,
+  //           sentAt: data.sentAt,
+  //         });
+  //         setChatHistory((prevChats) => [
+  //           ...prevChats,
+  //           {
+  //             textMetadata: data.textMetadata,
+  //             senderEmail: data.from,
+  //             receiverEmail: data.to,
+  //             sentAt: data.sentAt,
+  //           },
+  //         ]);
+  //         toast({
+  //           title: `Message sent to ${data.to} successfully`,
+  //           status: "success",
+  //           duration: 4000,
+  //           isClosable: true,
+  //           position: "top-right",
+  //         });
+  //       } else if (
+  //         data.message === `Message sent to ${currentChat} successfully`
+  //       ) {
+  //         toast({
+  //           title: `Message sent successfully to ${currentChat}`,
+  //           status: "success",
+  //           duration: 4000,
+  //           isClosable: true,
+  //           position: "top-right",
+  //         });
+  //       } else if (
+  //         data.message ===
+  //         `Chat Partner not matching with the one in the socket`
+  //       ) {
+  //         toast({
+  //           title: `Chat Partner Email mismatch happened`,
+  //           status: "error",
+  //           duration: 4000,
+  //           isClosable: true,
+  //           position: "top-right",
+  //         });
+  //         console.log("Chat Partner Email mismatch happened");
+  //         return;
+  //       } else if (
+  //         data.message ===
+  //         `All the chats have been fetched for ${currentUser?.email} successfully`
+  //       ) {
+  //         setChatPartnerViaSocket(data.chatPartners);
+  //         toast({
+  //           title: `All the chats have been fetched for ${currentUser?.email} successfully`,
+  //           status: "success",
+  //           duration: 4000,
+  //           isClosable: true,
+  //           position: "top-right",
+  //         });
+  //       } else if (data.action === "joined-group") {
+  //         toast({
+  //           title: data.title,
+  //           status: "success",
+  //           description: data.message,
+  //           isClosable: true,
+  //           position: "top-right",
+  //           duration: 400,
+  //         });
+  //       } else if (data.action === "receive-group-message") {
+  //         console.log("Received message from group: ", data.message);
+  //         setGroupChatHistory((prevChats) => [
+  //           ...prevChats,
+  //           {
+  //             groupId: data.targetGroup.id,
+  //             groupName: data.targetGroup.name,
+  //             senderId: Number(currentUser?.id),
+  //             senderName: String(currentUser?.name),
+  //             senderEmail: String(currentUser?.email),
+  //             textMetadata: data.message,
+  //             sentAt: data.sentAt,
+  //           },
+  //         ]);
+  //         toast({
+  //           title: `Received a message from ${data.targetGroup.name}`,
+  //           status: "success",
+  //           duration: 4000,
+  //           isClosable: true,
+  //           position: "top-right",
+  //         });
+  //       }
+  //     };
+  //   }
 
-    return () => {
-      if (ws) {
-        ws.onmessage = null;
-      }
-    };
-  }, [
-    ws,
-    toast,
-    currentChat,
-    currentUser,
-    setChatHistory,
-    setLatestText,
-    setGroupChatHistory,
-  ]);
+  //   return () => {
+  //     if (ws) {
+  //       ws.onmessage = null;
+  //     }
+  //   };
+  // }, [
+  //   ws,
+  //   toast,
+  //   currentChat,
+  //   currentUser,
+  //   setChatHistory,
+  //   setLatestText,
+  //   setGroupChatHistory,
+  // ]);
 
   const handleCreateGroup = async () => {
     setGroupCreationLoading(true);

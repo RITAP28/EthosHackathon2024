@@ -7,7 +7,7 @@ import {
   ModalBody,
   ModalCloseButton,
 } from "@chakra-ui/react";
-import { User } from "../../../lib/interface";
+import { User } from "../../../utils/interface";
 
 const CreateGroupModal = ({
   isOpen,

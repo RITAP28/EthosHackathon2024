@@ -1,4 +1,4 @@
-import { Group } from "../../../lib/interface";
+import { Group } from "../../../utils/interface";
 
 const GroupsSidePanel = ({
   loadingGroups,

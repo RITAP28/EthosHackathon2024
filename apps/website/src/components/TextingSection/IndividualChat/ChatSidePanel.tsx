@@ -1,5 +1,5 @@
 import { FaUser } from "react-icons/fa";
-import { ChatPartner, latestTextWithUser } from "../../../lib/interface";
+import { ChatPartner, latestTextWithUser } from "../../../utils/interface";
 
 const ChatSidePanel = ({
   loadingPartners,

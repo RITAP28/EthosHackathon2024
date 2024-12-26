@@ -1,4 +1,4 @@
-import { ChatHistory, CurrentChat } from "../../../lib/interface";
+import { ChatHistory, CurrentChat } from "../../../utils/interface";
 import ChatScrollView from "./ChatWindow/ChatScrollView";
 import ChatInputArea from "./ChatWindow/ChatInputArea";
 import ChatHeader from "./ChatWindow/ChatHeader";

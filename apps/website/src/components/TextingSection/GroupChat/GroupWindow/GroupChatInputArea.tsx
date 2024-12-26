@@ -1,6 +1,6 @@
 import { GoPaperclip } from "react-icons/go";
 import { MdKeyboardVoice } from "react-icons/md";
-import { Group } from "../../../../lib/interface";
+import { Group } from "../../../../utils/interface";
 import { IoSend } from "react-icons/io5";
 
 const GroupChatInputArea = ({

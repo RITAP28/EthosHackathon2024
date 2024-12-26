@@ -1,4 +1,4 @@
-import { Group, GroupChatHistory } from "../../../lib/interface";
+import { Group, GroupChatHistory } from "../../../utils/interface";
 import { useAppSelector } from "../../../redux/hooks/hook";
 import GroupInfo from "./GroupWindow/GroupInfo";
 import GroupChatInputArea from "./GroupWindow/GroupChatInputArea";
