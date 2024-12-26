@@ -11,6 +11,7 @@ import {
 } from "../utils/interface";
 import axios from "axios";
 import { baseUrl, createConfig } from "../utils/util";
+import showSuccessToast from "../components/ui/toasts/showSuccessToast";
 
 const useWebSocketConnection = (token: string) => {
   const { currentUser, accessToken } = useAppSelector((state) => state.user);
@@ -113,13 +114,11 @@ const useWebSocketConnection = (token: string) => {
                 sentAt: data.sentAt,
               },
             ]);
-            toast({
-              title: `${data.from} has sent a message`,
-              status: "success",
-              duration: 4000,
-              isClosable: true,
-              position: "top-right",
-            });
+            showSuccessToast(
+                toast,
+                `${data.from} has sent a message`,
+                `${data.from}: ${data.textMetadata}`
+            );
             break;
           case "send-message":
             setLatestText({

@@ -78,7 +78,7 @@ const TextingSection = ({
 
   // states for chat partners
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
-  const [, setChatPartnerViaSocket] = useState<ChatPartner[]>([]);
+  // const [, setChatPartnerViaSocket] = useState<ChatPartner[]>([]);
   const [loadingPartners, setLoadingPartners] = useState<boolean>(false);
 
   const [textMessage, setTextMessage] = useState<string>("");
