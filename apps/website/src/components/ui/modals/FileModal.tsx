@@ -3,24 +3,28 @@ import { Modal } from "./Modal";
 import ImageModal from "./fileModal/ImageModal";
 import VideoModal from "./fileModal/VideoModal";
 import FilesModal from "./fileModal/FilesModal";
-import { ChatHistory, CurrentChat, latestTextWithUser } from "../../../utils/interface";
+import { CurrentChat } from "../../../utils/interface";
 
 const FileModal = ({
-  ws,
   isModalOpen,
   closeModal,
   currentChat,
-  setLatestText,
-  setChatHistory,
-  handleSendButtonClick
+  textMessage,
+  setTextMessage,
+  handleSendButtonClick,
 }: {
-  ws: WebSocket | null;
   isModalOpen: boolean;
   closeModal: () => void;
   currentChat: CurrentChat;
-  setLatestText: React.Dispatch<React.SetStateAction<latestTextWithUser>>;
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
-  handleSendButtonClick: (receiverId: number, receiverName: string, receiverEmail: string) => Promise<void>;
+  textMessage: string;
+  setTextMessage: React.Dispatch<React.SetStateAction<string>>;
+  handleSendButtonClick: (
+    receiverId: number,
+    receiverName: string,
+    receiverEmail: string,
+    mediaUrl: string | null,
+    textMetadata: string
+  ) => Promise<void>;
 }) => {
   const [isOptionSelected, setIsOptionSelected] = useState<boolean>(false);
   const [openImageOption, setOpenImageOption] = useState<boolean>(false);
@@ -107,13 +111,12 @@ const FileModal = ({
           )}
           {isOptionSelected && openImageOption && (
             <ImageModal
-              ws={ws}
               closeModal={closeModal}
               currentChat={currentChat}
               setOpenImageOption={setOpenImageOption}
               setIsOptionSelected={setIsOptionSelected}
-              setLatestText={setLatestText}
-              setChatHistory={setChatHistory}
+              textMessage={textMessage}
+              setTextMessage={setTextMessage}
               handleSendButtonClick={handleSendButtonClick}
             />
           )}

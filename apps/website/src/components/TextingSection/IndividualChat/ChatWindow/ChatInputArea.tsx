@@ -2,31 +2,27 @@ import { GoPaperclip } from "react-icons/go";
 import { IoSend } from "react-icons/io5";
 import { MdKeyboardVoice } from "react-icons/md";
 import {
-  ChatHistory,
   CurrentChat,
-  latestTextWithUser,
 } from "../../../../utils/interface";
 import { useState } from "react";
 import FileModal from "../../../ui/modals/FileModal";
 
 const ChatInputArea = ({
-  ws,
+  textMessage,
   setTextMessage,
   handleSendButtonClick,
-  currentChat,
-  setLatestText,
-  setChatHistory,
+  currentChat
 }: {
-  ws: WebSocket | null;
+  textMessage: string;
   setTextMessage: React.Dispatch<React.SetStateAction<string>>;
   handleSendButtonClick: (
     receiverId: number,
     receiverName: string,
-    receiverEmail: string
+    receiverEmail: string,
+    mediaUrl: string | null,
+    textMetadata: string
   ) => Promise<void>;
   currentChat: CurrentChat;
-  setLatestText: React.Dispatch<React.SetStateAction<latestTextWithUser>>;
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
 }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
@@ -48,7 +44,7 @@ const ChatInputArea = ({
       >
         <GoPaperclip className="text-[1.5rem] hover:bg-slate-600 transition duration-200 ease-in-out rounded-full" />
       </div>
-      <div className="w-[80%] flex justify-start items-center">
+      <div className="w-[80%] flex justify-start witems-center">
         <div className="w-[90%]">
           <input
             type="text"
@@ -76,7 +72,9 @@ const ChatInputArea = ({
               handleSendButtonClick(
                 currentChat?.receiverId as number,
                 currentChat?.receiverName as string,
-                currentChat?.receiverEmail as string
+                currentChat?.receiverEmail as string,
+                null,
+                textMessage
               );
             }}
           >
@@ -86,12 +84,11 @@ const ChatInputArea = ({
       </div>
       {isModalOpen && (
         <FileModal
-          ws={ws}
           isModalOpen={isModalOpen}
           closeModal={closeModal}
           currentChat={currentChat}
-          setLatestText={setLatestText}
-          setChatHistory={setChatHistory}
+          textMessage={textMessage}
+          setTextMessage={setTextMessage}
           handleSendButtonClick={handleSendButtonClick}
         />
       )}

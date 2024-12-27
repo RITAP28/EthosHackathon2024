@@ -7,6 +7,7 @@ import {
   Group,
   GroupChatHistory,
   latestTextWithUser,
+  MessageType,
   User,
 } from "../utils/interface";
 import axios from "axios";
@@ -18,6 +19,9 @@ import GroupsSidePanel from "./TextingSection/GroupChat/GroupsSidePanel";
 import ChatSidePanel from "./TextingSection/IndividualChat/ChatSidePanel";
 import SearchUsersModal from "./TextingSection/Modals/SearchUsersModal";
 import CreateGroupModal from "./TextingSection/Modals/CreateGroupModal";
+import showErrorToast from "./ui/toasts/showErrorToast";
+import { handleApiError } from "../lib/error.handling";
+import showSuccessToast from "./ui/toasts/showSuccessToast";
 
 const TextingSection = ({
   token,
@@ -339,7 +343,8 @@ const TextingSection = ({
     receiverId: number,
     receiverName: string,
     receiverEmail: string,
-    mediaFile?: string,
+    mediaUrl: string | null,
+    textMetadata: string
   ) => {
     try {
       if (ws && ws.OPEN) {
@@ -347,66 +352,103 @@ const TextingSection = ({
           JSON.stringify({
             action: "send-message",
             targetEmail: receiverEmail,
-            message: textMessage,
+            message: textMetadata,
+            mediaUrl: mediaUrl,
           })
         );
         setLatestText({
           receivedBy: receiverEmail,
           sentBy: currentUser?.email as string,
-          latestText: textMessage,
+          mediaUrl: mediaUrl,
+          latestText: textMetadata,
           sentAt: new Date(Date.now()),
         });
-        setChatHistory((prevChats) => [
-          ...prevChats,
-          {
-            senderEmail: currentUser?.email as string,
-            receiverEmail: receiverEmail,
-            textMetadata: textMessage,
-            sentAt: new Date(Date.now()),
-          },
-        ]);
-
+        if (mediaUrl === null) {
+          setChatHistory((prevChats) => [
+            ...prevChats,
+            {
+              senderEmail: currentUser?.email as string,
+              receiverEmail: receiverEmail,
+              mediaUrl: mediaUrl,
+              textMetadata: textMetadata,
+              messageType: MessageType.TEXT,
+              sentAt: new Date(Date.now()),
+            },
+          ]);
+        } else {
+          setChatHistory((prevChats) => [
+            ...prevChats,
+            {
+              senderEmail: currentUser?.email as string,
+              receiverEmail: receiverEmail,
+              mediaUrl: mediaUrl,
+              textMetadata: textMetadata,
+              messageType: MessageType.TEXT_MEDIA,
+              sentAt: new Date(Date.now()),
+            },
+          ]);
+        };
         await handleGetSpecificChatPartnerById(
           receiverId,
           currentUser?.id as number
         );
         if (currentChatName === null) {
-          setChatPartners((prevChatPartners) => [
-            ...prevChatPartners,
-            {
-              chatPartnerId: receiverId,
-              chatPartnerName: receiverName,
-              chatPartnerEmail: receiverEmail,
-              latestChat: textMessage,
-              startedAt: new Date(Date.now()),
-            },
-          ]);
-        }
+          if (mediaUrl === null) {
+            setChatPartners((prevChatPartners) => [
+              ...prevChatPartners,
+              {
+                chatPartnerId: receiverId,
+                chatPartnerName: receiverName,
+                chatPartnerEmail: receiverEmail,
+                mediaUrl: mediaUrl,
+                latestChat: textMetadata,
+                latestChatType: MessageType.TEXT,
+                startedAt: new Date(Date.now()),
+              },
+            ]);
+          } else {
+            setChatPartners((prevChatPartners) => [
+              ...prevChatPartners,
+              {
+                chatPartnerId: receiverId,
+                chatPartnerName: receiverName,
+                chatPartnerEmail: receiverEmail,
+                mediaUrl: mediaUrl,
+                latestChat: textMetadata,
+                latestChatType: MessageType.TEXT_MEDIA,
+                startedAt: new Date(Date.now()),
+              },
+            ]);
+          }
+        };
+        showSuccessToast(
+          toast,
+          "Message sent successfully",
+          `You sent a message to ${receiverName}`
+        );
 
         ws.onclose = () => {
           console.log("Websocket connection closed");
-          toast({
-            title: `WebSocket connection closed`,
-            description: `Now you are no longer connected to our servers`,
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
+          showErrorToast(
+            toast,
+            "WebSocket connection closed",
+            "Now you are no longer connected to our servers"
+          );
         };
 
         ws.onerror = () => {
           console.error("Websocket connection error");
-          toast({
-            title: `WebSocket connection Error`,
-            description: `Something went wrong with websockets`,
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
+          showErrorToast(
+            toast,
+            "WebSocket connection Error",
+            "Something went wrong with websockets"
+          );
         };
       }
     } catch (error) {
       console.error("Error while sending message: ", error);
+      const apiError = handleApiError(error);
+      showErrorToast(toast, "Error while sending message", apiError.message);
     }
   };
 
@@ -880,16 +922,14 @@ const TextingSection = ({
             : !chatWindow && !groupWindow && <NormalWindow />}
           {chatWindow && currentChat !== null && currentChatName !== null && (
             <IndividualChatWindow
-              ws={ws}
               currentChatName={currentChatName}
               loadingChatHistory={loadingChatHistory}
               chatHistory={chatHistory}
               handleDateFormat={handleDateFormat}
+              textMessage={textMessage}
               setTextMessage={setTextMessage}
               handleSendButtonClick={handleSendButtonClick}
               currentChat={currentChat}
-              setLatestText={setLatestText}
-              setChatHistory={setChatHistory}
             />
           )}
           {groupWindow && groupChat && (

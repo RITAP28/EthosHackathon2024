@@ -582,10 +582,15 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
       }
 
       // handling messages between the client and the target user account
-      if (parsedMessage.action === "send-message") {
+    if (parsedMessage.action === "send-message") {
         const chatPartnerEmail = parsedMessage.targetEmail as string;
         const SocketChatPartner = ws.chatPartner;
         console.log("chat partner email: ", chatPartnerEmail);
+
+        const {
+          message: textMetadata,
+          mediaUrl
+        } = parsedMessage;
 
         if (
           SocketChatPartner &&
@@ -596,7 +601,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           SocketChatPartner.send(
             JSON.stringify({
               action: "receive-message",
-              textMetadata: parsedMessage.message,
+              mediaUrl: mediaUrl,
+              textMetadata: textMetadata,
               from: ws.user.email,
               to: chatPartnerEmail,
               sentAt: new Date(Date.now()),
@@ -605,7 +611,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           const chatId = await addChatsToDatabase(
             ws.user.email,
             chatPartnerEmail,
-            parsedMessage.message
+            parsedMessage.message,
+            mediaUrl
           );
           if (SocketChatPartner.OPEN) {
             // updating the chat model
@@ -623,7 +630,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               ws.user,
               SocketChatPartner.user,
               chatPartnerEmail,
-              parsedMessage.message
+              mediaUrl,
+              textMetadata
             );
 
             console.log(
@@ -647,7 +655,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           const chatId = await addChatsToDatabase(
             ws.user.email,
             chatPartnerEmail,
-            parsedMessage.message
+            mediaUrl,
+            textMetadata
           );
           await prisma.chat.update({
             where: {
@@ -664,8 +673,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               receiverId: Number(offlineTargetUser?.id),
               receiverEmail: String(offlineTargetUser?.email),
               senderEmail: String(ws.user.email),
-              title: `You have one unread text message from ${ws.user.name}`,
-              message: `${parsedMessage.message}`,
+              mediaUrl: mediaUrl,
+              title: `You have one unread message from ${ws.user.name}`,
+              message: `${textMetadata}`,
               createdAt: new Date(Date.now()),
               isRead: false,
               notificationType: "receive-message",
@@ -675,7 +685,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             ws.user, // sender = defined
             SocketChatPartner, // receiver = undefined
             chatPartnerEmail, // receiver email = undefined
-            parsedMessage.message // text metadata
+            mediaUrl,
+            textMetadata // text metadata
           );
           console.log(
             "the function createAndUpdateChatPartnerData ran successfully"
@@ -714,19 +725,23 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           receiver: ws.user.email,
           sender: senderEmail,
         });
+
+        const {
+          message: textMetadata,
+          mediaUrl
+        } = parsedMessage;
+
         ws.send(
           JSON.stringify({
             message: `Received message from ${senderEmail} successfully`,
-            textMetadata: parsedMessage.textMetadata,
+            mediaUrl: mediaUrl,
+            textMetadata: textMetadata,
             from: parsedMessage.from,
             to: parsedMessage.to,
             sentAt: parsedMessage.sentAt,
             receivedAt: new Date(Date.now()),
           })
         );
-      } else if (parsedMessage.action === "send-message-with-image") {
-        const chatPartnerEmail = parsedMessage.targetEmail as string;
-        const SocketChatPartner = ws.chatPartner;
       }
 
       // for actions regarding groups

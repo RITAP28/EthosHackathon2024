@@ -23,6 +23,12 @@ enum MessageType {
   TEXT_MEDIA
 }
 
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
 model User {
   id                     Int       @id @unique @default(autoincrement())
   name                   String
@@ -58,18 +64,32 @@ model Chat {
   isDelivered   Boolean     @default(false)
   isRead        Boolean     @default(false)
   messageType   MessageType @default(TEXT)
+  Media         Media[]
+}
+
+model Media {
+  mediaId    Int       @id @default(autoincrement())
+  mediaUrl   String
+  type       MediaType @default(IMAGE)
+  uploadedAt DateTime
+  expiresAt  DateTime
+  updatedAt  DateTime
+  chatId     Int
+  chat       Chat      @relation(references: [chatId], fields: [chatId], onDelete: Cascade)
 }
 
 model ChatPartners {
-  id               Int       @id @unique @default(autoincrement())
+  id               Int         @id @unique @default(autoincrement())
   senderId         Int
   senderName       String
   senderEmail      String
   chatPartnerId    Int
   chatPartnerName  String
   chatPartnerEmail String
+  mediaUrl         String?
   latestChat       String?
-  startedAt        DateTime  @default(now())
+  latestChatType   MessageType @default(TEXT)
+  startedAt        DateTime    @default(now())
   updatedAt        DateTime?
 
   @@unique([senderEmail, chatPartnerEmail])
@@ -130,8 +150,9 @@ model Notifications {
   receiverId       Int
   receiverEmail    String
   senderEmail      String
+  mediaUrl         String?
   title            String
-  message          String
+  message          String?
   isGroup          Boolean   @default(false)
   groupId          Int?
   groupName        String?

@@ -1,3 +1,9 @@
+export enum MessageType {
+    TEXT,
+    MEDIA,
+    TEXT_MEDIA
+}
+
 export interface User {
     id?: number;
     name?: string;
@@ -12,7 +18,9 @@ export interface ChatPartner {
     chatPartnerName: string;
     chatPartnerEmail: string;
     startedAt: Date;
+    mediaUrl: string | null;
     latestChat: string;
+    latestChatType: MessageType;
     updatedAt?: Date;
 };
 
@@ -20,12 +28,13 @@ export interface ChatHistory {
     chatId?: number,
     senderEmail: string;
     receiverEmail: string;
-    mediaFile?: string;
+    mediaUrl: string | null;
     textMetadata?: string;
     sentAt: Date;
     receivedAt?: Date;
     isDelivered?: boolean;
     isRead?: boolean;
+    messageType: MessageType;
 }
 
 export interface CurrentChat {
@@ -37,7 +46,7 @@ export interface CurrentChat {
 export interface latestTextWithUser {
     receivedBy: string;
     sentBy: string;
-    mediaFile?: string;
+    mediaUrl: string | null;
     latestText?: string;
     sentAt: Date;
   };

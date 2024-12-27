@@ -2,6 +2,8 @@ import express from 'express';
 import { isAuthenticated } from '../middlewares/auth.middleware';
 import { getGroupChatHistory, getGroupMembers, getGroupOwner, getGroupsForUser } from '../controllers/user.controller';
 import { adminExitGroup, makeAdminBeforeExiting } from '../controllers/admin.controller';
+import { upload } from '../middlewares/multer.middleware';
+import { uploadMediaFiles } from '../controllers/upload.controller';
 
 
 export default (router: express.Router) => {
@@ -12,4 +14,7 @@ export default (router: express.Router) => {
 
     router.put('/put/group/makeAdminBeforeExiting', makeAdminBeforeExiting);
     router.delete('/delete/group/exit/admin', adminExitGroup);
+
+    // route to upload media files like image, video or document
+    router.post('/api/v1/upload/media', upload.single("imageFile"), uploadMediaFiles);
 }
