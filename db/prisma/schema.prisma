@@ -17,6 +17,12 @@ enum GroupRole {
   ADMIN
 }
 
+enum MessageType {
+  TEXT
+  MEDIA
+  TEXT_MEDIA
+}
+
 model User {
   id                     Int       @id @unique @default(autoincrement())
   name                   String
@@ -42,14 +48,16 @@ model Session {
 }
 
 model Chat {
-  chatId        Int       @id @default(autoincrement())
+  chatId        Int         @id @default(autoincrement())
   senderEmail   String
   receiverEmail String
-  textMetadata  String
-  sentAt        DateTime  @default(now())
+  mediaUrl      String?
+  textMetadata  String?
+  sentAt        DateTime    @default(now())
   receivedAt    DateTime?
-  isDelivered   Boolean   @default(false)
-  isRead        Boolean   @default(false)
+  isDelivered   Boolean     @default(false)
+  isRead        Boolean     @default(false)
+  messageType   MessageType @default(TEXT)
 }
 
 model ChatPartners {

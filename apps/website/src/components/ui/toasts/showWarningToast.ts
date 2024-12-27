@@ -1,6 +1,6 @@
 import { ToastId, UseToastOptions } from "@chakra-ui/react";
 
-const showToast = (
+const showWarningToast = (
     toast: (options?: UseToastOptions) => ToastId,
     title: string,
     description: string
@@ -15,4 +15,4 @@ const showToast = (
     });
 };
 
-export default showToast;
+export default showWarningToast;

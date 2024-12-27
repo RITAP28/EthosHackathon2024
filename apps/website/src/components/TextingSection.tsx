@@ -1,7 +1,4 @@
-import {
-  useDisclosure,
-  useToast,
-} from "@chakra-ui/react";
+import { useDisclosure, useToast } from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
 import {
   ChatHistory,
@@ -341,7 +338,8 @@ const TextingSection = ({
   const handleSendButtonClick = async (
     receiverId: number,
     receiverName: string,
-    receiverEmail: string
+    receiverEmail: string,
+    mediaFile?: string,
   ) => {
     try {
       if (ws && ws.OPEN) {
@@ -882,6 +880,7 @@ const TextingSection = ({
             : !chatWindow && !groupWindow && <NormalWindow />}
           {chatWindow && currentChat !== null && currentChatName !== null && (
             <IndividualChatWindow
+              ws={ws}
               currentChatName={currentChatName}
               loadingChatHistory={loadingChatHistory}
               chatHistory={chatHistory}
@@ -889,6 +888,8 @@ const TextingSection = ({
               setTextMessage={setTextMessage}
               handleSendButtonClick={handleSendButtonClick}
               currentChat={currentChat}
+              setLatestText={setLatestText}
+              setChatHistory={setChatHistory}
             />
           )}
           {groupWindow && groupChat && (

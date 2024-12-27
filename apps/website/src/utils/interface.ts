@@ -20,7 +20,8 @@ export interface ChatHistory {
     chatId?: number,
     senderEmail: string;
     receiverEmail: string;
-    textMetadata: string;
+    mediaFile?: string;
+    textMetadata?: string;
     sentAt: Date;
     receivedAt?: Date;
     isDelivered?: boolean;
@@ -36,7 +37,8 @@ export interface CurrentChat {
 export interface latestTextWithUser {
     receivedBy: string;
     sentBy: string;
-    latestText: string;
+    mediaFile?: string;
+    latestText?: string;
     sentAt: Date;
   };
 

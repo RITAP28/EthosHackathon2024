@@ -5,14 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import BackButton from '../../components/BackButton';
-// import { useAppSelector } from '../../redux/hooks/hook';
 import { RegistrationSuccess } from '../../redux/slices/user.slice';
 // import { RegisterSchema } from '../../utils/zodSchemas';
 
 function Register() {
-  // const { currentUser, isAuthenticated } = useAppSelector(
-  //   (state) => state.user,
-  // );
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState<boolean>(false);

@@ -724,6 +724,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             receivedAt: new Date(Date.now()),
           })
         );
+      } else if (parsedMessage.action === "send-message-with-image") {
+        const chatPartnerEmail = parsedMessage.targetEmail as string;
+        const SocketChatPartner = ws.chatPartner;
       }
 
       // for actions regarding groups
