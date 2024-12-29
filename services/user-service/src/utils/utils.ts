@@ -1,8 +1,10 @@
 import { z } from "zod";
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import { createLogger } from "../../../shared/logger";
 
 dotenv.config();
+export const logger = createLogger("user-service");
 
 export interface Register {
   name: string;

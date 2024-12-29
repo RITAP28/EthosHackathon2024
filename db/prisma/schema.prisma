@@ -74,8 +74,8 @@ model Media {
   uploadedAt DateTime
   expiresAt  DateTime
   updatedAt  DateTime
-  chatId     Int
-  chat       Chat      @relation(references: [chatId], fields: [chatId], onDelete: Cascade)
+  chatId     Int?
+  chat       Chat?     @relation(references: [chatId], fields: [chatId], onDelete: Cascade)
 }
 
 model ChatPartners {

@@ -1,12 +1,21 @@
 import { Request, Response } from "express";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
-import crypto from 'crypto';
+import crypto from "crypto";
+import { logger } from "../utils/utils";
+import { prisma } from "../../../../db/db";
 
 dotenv.config();
 
-const randomNameGenerator = (bytes: number) => crypto.randomBytes(bytes).toString('hex');
+const randomNameGenerator = (bytes: number) =>
+  crypto.randomBytes(bytes).toString("hex");
+
+const expTime = 24 * 60 * 60;
 
 const bucketName = process.env.BUCKET_NAME as string;
 const bucketRegion = process.env.BUCKET_REGION as string;
@@ -21,6 +30,23 @@ const s3 = new S3Client({
   },
 });
 
+if (
+  !bucketName ||
+  !bucketRegion ||
+  !bucketAccessKey ||
+  !bucketSecretAccessKey
+) {
+  logger.error("Missing required AWS S# environment variable", {
+    service: "user-service",
+    action: "upload-image-with-text",
+    errorMessage: "Missing required AWS S3 environment variable",
+    function: "uploadMediaFiles()",
+    file: "media.controller.ts",
+  });
+  throw new Error("Missing required AWS S# environment variable");
+}
+
+// at first uploading the image to the S3 bucket with a filename and Put operation
 export async function uploadMediaFiles(req: Request, res: Response) {
   console.log("request body: ", req.body);
   console.log("request file: ", req.file);
@@ -39,10 +65,32 @@ export async function uploadMediaFiles(req: Request, res: Response) {
     console.log("making the signed url for the recently uploaded image");
     const signedUrl = await getMediaFileSignedUrl(fileName);
 
+    if (signedUrl === null) {
+      console.error("Signed URL could not be generated");
+      logger.error("Error while getting media file presigned URL", {
+        action: "user-service",
+        service: "getting-presigned-url-for-uploaded-image",
+        errorMessage: "No signed URL found",
+        function: "getMediaFileSignedUrl()",
+        file: "media.controller.ts",
+      });
+    }
+
+    // adding the file URL to the database
+    await prisma.media.create({
+      data: {
+        mediaUrl: signedUrl as string,
+        type: "IMAGE",
+        uploadedAt: new Date(Date.now()),
+        expiresAt: new Date(Date.now() + expTime * 1000),
+        updatedAt: new Date(Date.now()),
+      },
+    });
+
     return res.status(200).json({
-        success: true,
-        msg: "Media file signed successfully",
-        mediaUrl: signedUrl
+      success: true,
+      msg: "Media file signed successfully",
+      mediaUrl: signedUrl,
     });
   } catch (error) {
     console.error("Error while uploading media files: ", error);
@@ -51,26 +99,36 @@ export async function uploadMediaFiles(req: Request, res: Response) {
       msg: "Error while uploading media files",
     });
   }
-};
+}
 
 async function getMediaFileSignedUrl(filename: string) {
-    try {
-        const getCommand = new GetObjectCommand({
-            Bucket: bucketName,
-            Key: filename
-        });
+  try {
+    const getCommand = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: filename,
+    });
 
-        const signedUrl = await getSignedUrl(
-            s3,
-            getCommand,
-            {
-                expiresIn: 24 * 60 * 60
-            }
-        );
+    const signedUrl = await getSignedUrl(s3, getCommand, {
+      expiresIn: expTime,
+    });
 
-        console.log("signed url is: ", signedUrl);
-        return signedUrl;
-    } catch (error) {
-        console.error("Error while getting media file presigned url: ", error);
-    }
+    console.log("signed url is: ", signedUrl);
+    logger.info("Signed URL has been generated successfully", {
+      action: "user-service",
+      service: "getting-presignedURL-for-uploaded-image",
+      function: "getMediaFileSignedUrl()",
+      file: "upload.controller.ts",
+    });
+    return signedUrl;
+  } catch (error) {
+    console.error("Error while getting media file presigned url: ", error);
+    logger.error("Error while getting media file presigned URL", {
+      action: "user-service",
+      service: "getting-presigned-url-for-uploaded-image",
+      errorMessage: error,
+      function: "getMediaFileSignedUrl()",
+      file: "upload.controller.ts",
+    });
+    return null;
+  }
 }

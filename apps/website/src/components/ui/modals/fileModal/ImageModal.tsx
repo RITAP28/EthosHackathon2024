@@ -73,7 +73,7 @@ const ImageModal = ({
         currentChat.receiverId,
         currentChat.receiverName,
         currentChat.receiverEmail,
-        imageUrl,
+        mediaResponse.data.mediaUrl,
         textMessage
       );
     } catch (error) {

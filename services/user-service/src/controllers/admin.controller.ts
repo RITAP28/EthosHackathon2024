@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../../db/db";
-import { createLogger } from "../../../shared/logger";
+import { logger } from "../utils/utils";
 
 enum GroupRole {
   MEMBER,
   ADMIN,
 }
 
-const logger = createLogger("user-service");
+
 
 // functionalities to be included for the admins of the groups
 // ADD A MEMBER ACCORDING TO THEIR CHOICE
