@@ -51,7 +51,7 @@ enum GroupRole {
   MEMBER = "MEMBER",
 }
 
-const logger = createLogger("messaging-service");
+export const logger = createLogger("messaging-service");
 
 wss.on("connection", async function connection(ws: ExtendedWebsocket) {
   ws.groups = []; // initializing the groups array in the websocket
@@ -582,15 +582,12 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
       }
 
       // handling messages between the client and the target user account
-    if (parsedMessage.action === "send-message") {
+      if (parsedMessage.action === "send-message") {
         const chatPartnerEmail = parsedMessage.targetEmail as string;
         const SocketChatPartner = ws.chatPartner;
         console.log("chat partner email: ", chatPartnerEmail);
 
-        const {
-          message: textMetadata,
-          mediaUrl
-        } = parsedMessage;
+        const { message: textMetadata, mediaUrl } = parsedMessage;
 
         if (
           SocketChatPartner &&
@@ -601,8 +598,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           SocketChatPartner.send(
             JSON.stringify({
               action: "receive-message",
-              mediaUrl: mediaUrl,
-              textMetadata: textMetadata,
+              mediaUrl: mediaUrl, // can be a string or null, depending upon whether image was sent or not
+              textMetadata: textMetadata, // can be a string or null, depending upon whether text was sent or not
               from: ws.user.email,
               to: chatPartnerEmail,
               sentAt: new Date(Date.now()),
@@ -611,18 +608,30 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           const chatId = await addChatsToDatabase(
             ws.user.email,
             chatPartnerEmail,
-            parsedMessage.message,
-            mediaUrl
-          );
+            textMetadata, // string | null
+            mediaUrl // string | null
+          ) as number;
+          if (mediaUrl !== null) {
+            await prisma.media.create({
+              data: {
+                mediaUrl: mediaUrl,
+                type: "IMAGE",
+                uploadedAt: new Date(Date.now()),
+                expiresAt: new Date(Date.now()),
+                updatedAt: new Date(Date.now()),
+                chatId: Number(chatId)
+              }
+            })
+          }
           if (SocketChatPartner.OPEN) {
-            // updating the chat model
+            // updating the chat row created just above
             await prisma.chat.update({
               where: {
-                chatId: chatId,
+                chatId: chatId, // find the chat row created above with the help of chatId
               },
               data: {
                 receivedAt: new Date(Date.now()),
-                isDelivered: true,
+                isDelivered: true, // now the chat is sent to the receiver, so set to true
               },
             });
 
@@ -642,7 +651,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             JSON.stringify({
               action: "send-message",
               message: `Message sent to ${chatPartnerEmail} successfully`,
-              textMetadata: parsedMessage.message,
+              mediaUrl: mediaUrl, // string | null
+              textMetadata: parsedMessage.message, // string | null
               from: ws.user.email,
               to: chatPartnerEmail,
               sentAt: new Date(Date.now()),
@@ -657,7 +667,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             chatPartnerEmail,
             mediaUrl,
             textMetadata
-          );
+          ) as number;
           await prisma.chat.update({
             where: {
               chatId: chatId,
@@ -673,9 +683,9 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
               receiverId: Number(offlineTargetUser?.id),
               receiverEmail: String(offlineTargetUser?.email),
               senderEmail: String(ws.user.email),
-              mediaUrl: mediaUrl,
+              mediaUrl: mediaUrl, // string | null
               title: `You have one unread message from ${ws.user.name}`,
-              message: `${textMetadata}`,
+              message: `${textMetadata}`, // string | null
               createdAt: new Date(Date.now()),
               isRead: false,
               notificationType: "receive-message",
@@ -685,8 +695,8 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
             ws.user, // sender = defined
             SocketChatPartner, // receiver = undefined
             chatPartnerEmail, // receiver email = undefined
-            mediaUrl,
-            textMetadata // text metadata
+            mediaUrl, // string | null
+            textMetadata // string | null
           );
           console.log(
             "the function createAndUpdateChatPartnerData ran successfully"
@@ -726,10 +736,7 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           sender: senderEmail,
         });
 
-        const {
-          message: textMetadata,
-          mediaUrl
-        } = parsedMessage;
+        const { message: textMetadata, mediaUrl } = parsedMessage;
 
         ws.send(
           JSON.stringify({
@@ -907,11 +914,14 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           const isNewAdminOnline = Array.from(wss.clients).find((x) => {
             const extendedClient = x as ExtendedWebsocket;
             if (extendedClient.user.email === newAdminEmail) {
-              console.log("extended client user property: ", extendedClient.user);
+              console.log(
+                "extended client user property: ",
+                extendedClient.user
+              );
             }
             return extendedClient.user.email === newAdminEmail;
           });
-  
+
           if (!isNewAdminOnline || isNewAdminOnline === undefined) {
             await prisma.notifications.create({
               data: {
@@ -943,10 +953,13 @@ wss.on("connection", async function connection(ws: ExtendedWebsocket) {
           }
         } catch (error) {
           console.error(error);
-          logger.error("Error while making someone else admin and exiting the group", {
-            action: "admin-change-and-exit-group",
-            errorMessage: error,
-          })
+          logger.error(
+            "Error while making someone else admin and exiting the group",
+            {
+              action: "admin-change-and-exit-group",
+              errorMessage: error,
+            }
+          );
         }
       }
     } catch (error) {

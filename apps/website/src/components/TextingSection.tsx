@@ -339,6 +339,8 @@ const TextingSection = ({
     }
   };
 
+  // shall I make two functions for handling text transfer and image transfer?
+  // or shall I make two cases within the same function to make it easy?
   const handleSendButtonClick = async (
     receiverId: number,
     receiverName: string,
@@ -451,6 +453,39 @@ const TextingSection = ({
       showErrorToast(toast, "Error while sending message", apiError.message);
     }
   };
+
+  // export async function handleSendButtonWithImage({
+  //   ws,
+  //   sender,
+  //   receiver,
+  //   imageUrl,
+  //   textMetadata,
+  // } : {
+  //   ws: WebSocket | null,
+  //   sender: Sender,
+  //   receiver: Receiver,
+  //   imageUrl: string,
+  //   textMetadata: string,
+  // }) {
+  //   const chatPartnerEmail = receiver.email;
+  //   const SocketChatPartner = ws?.chatPartner;
+  //   console.log("sending chat plus image to: ", chatPartnerEmail);
+  //   try {
+  //     if (ws && ws.OPEN) {
+  //       ws.send(
+  //         JSON.stringify({
+  //           action: "send-message-with-image",
+  //           targetEmail: chatPartnerEmail,
+  //           mediaUrl: imageUrl,
+  //           message: textMetadata
+  //         })
+  //       );
+  
+  //     }
+  //   } catch (error) {
+  //     console.error("Error while sending image with text: ", error);
+  //   }
+  // }
 
   const handleDateFormat = (sentAt: Date): string => {
     const messageDate = new Date(sentAt);

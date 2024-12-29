@@ -16,6 +16,20 @@ const ChatScrollView = ({
     : chatHistory.map((chat, index) =>
         chat.senderEmail === currentUser?.email ? (
           <div className="flex justify-end pt-2" key={index}>
+            {chat.mediaUrl && chat.mediaUrl.length > 0 && (
+              <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
+                <div className="w-full">
+                  <img
+                    className="w-full h-full object-cover rounded-lg"
+                    src={chat.mediaUrl}
+                    alt="media"
+                  />
+                </div>
+                <div className="w-full flex justify-end text-[0.7rem]">
+                  {handleDateFormat(chat.sentAt)}
+                </div>
+              </div>
+            )}
             <div className="p-3 bg-green-500 rounded-lg max-w-[70%] flex flex-col">
               <div className="w-full">
                 <p className="text-white">{chat.textMetadata}</p>

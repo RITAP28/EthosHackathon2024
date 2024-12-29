@@ -8,7 +8,6 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
         // checking of both the refreshToken and accessToken
         const authHeader = req.headers['authorization'];
         const accessToken = authHeader && authHeader.split(' ')[1];
-        console.log('accessToken: ', accessToken);
 
         if(!accessToken || accessToken === undefined){
             return res.status(401).json({

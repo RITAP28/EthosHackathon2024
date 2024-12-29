@@ -287,14 +287,14 @@ export const readToken = async (req: Request, res: Response) => {
         msg: "User ID is missing",
       });
     }
-    console.log(userId);
+    // console.log(userId);
     const session = await prisma.session.findUnique({
       where: {
         userId: userId,
       },
     });
     const token = session?.refreshToken as string;
-    console.log("The token is: ", token);
+    // console.log("The token is: ", token);
     const decodedToken = jwt.verify(token, refreshTokenSecret);
     return res.status(200).json({
       success: true,

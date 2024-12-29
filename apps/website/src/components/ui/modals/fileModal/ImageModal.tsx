@@ -38,12 +38,8 @@ const ImageModal = ({
   const [imageUrl, setImageUrl] = useState<string>("");
   const formData = new FormData();
 
-  if (image) formData.append("imageFile", image);
-  if (textMessage) formData.append("caption", textMessage);
-
   const handleSubmitData = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoading(true);
-    console.log("formdata image transfer: ", formData);
     if (!image) {
       console.log("Please provide an image");
       showWarningToast(
@@ -53,16 +49,25 @@ const ImageModal = ({
       );
       return;
     }
-    e.preventDefault();
+    if (image) formData.append("imageFile", image);
+    if (textMessage) formData.append("caption", textMessage);
+    console.log("formdata image transfer: ", formData);
     try {
-      const mediaResponse = await axios.post(`${baseUrl}/api/v1/upload/media`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${accessToken}`
+      e.preventDefault();
+      const mediaResponse = await axios.post(
+        `${baseUrl}/api/v1/upload/media`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
-      });
+      );
       console.log("media response: ", mediaResponse.data);
       setImageUrl(mediaResponse.data.mediaUrl);
+
+      console.log("image url: ", imageUrl);
 
       await handleSendButtonClick(
         currentChat.receiverId,

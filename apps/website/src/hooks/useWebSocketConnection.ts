@@ -8,6 +8,7 @@ import {
   Group,
   GroupChatHistory,
   latestTextWithUser,
+  MessageType,
 } from "../utils/interface";
 import axios from "axios";
 import { baseUrl, createConfig } from "../utils/util";
@@ -22,6 +23,7 @@ const useWebSocketConnection = (token: string) => {
   const [latestText, setLatestText] = useState<latestTextWithUser>({
     receivedBy: "",
     sentBy: "",
+    mediaUrl: "",
     latestText: "",
     sentAt: new Date(0),
   });
@@ -77,6 +79,8 @@ const useWebSocketConnection = (token: string) => {
         console.log("Message received from server: ", message);
         const data = JSON.parse(message.data);
         console.log("data received from the server: ", data);
+        const mediaUrl = data.mediaUrl;
+        const text = data.textMetadata;
         switch (data.action) {
           case "Authentication failed":
             console.log("Authentication failed");
@@ -100,6 +104,7 @@ const useWebSocketConnection = (token: string) => {
             setLatestText({
               receivedBy: data.to,
               sentBy: data.from,
+              mediaUrl: data.mediaUrl,
               latestText: data.textMetadata,
               sentAt: data.sentAt,
             });
@@ -108,25 +113,52 @@ const useWebSocketConnection = (token: string) => {
             setChatHistory((prevChats) => [
               ...prevChats,
               {
-                textMetadata: data.textMetadata,
                 senderEmail: data.from,
                 receiverEmail: data.to,
+                mediaUrl: data.mediaUrl,
+                textMetadata: data.textMetadata,
+                messageType:
+                  mediaUrl && text
+                    ? MessageType.TEXT_MEDIA
+                    : mediaUrl && text === null
+                    ? MessageType.MEDIA
+                    : MessageType.TEXT,
                 sentAt: data.sentAt,
               },
             ]);
             showSuccessToast(
-                toast,
-                `${data.from} has sent a message`,
-                `${data.from}: ${data.textMetadata}`
+              toast,
+              `${data.from} has sent a message`,
+              `${data.from}: ${data.textMetadata}`
             );
             break;
           case "send-message":
             setLatestText({
               receivedBy: data.to,
               sentBy: data.from,
+              mediaUrl: data.mediaUrl,
               latestText: data.textMetadata,
               sentAt: data.sentAt,
             });
+            console.log(
+              `message sent successfully to ${data.to} from ${data.from}`
+            );
+            setChatHistory((prevChats) => [
+              ...prevChats,
+              {
+                senderEmail: data.from,
+                receiverEmail: data.to,
+                mediaUrl: mediaUrl,
+                textMetadata: text,
+                messageType:
+                  mediaUrl && text
+                    ? MessageType.TEXT_MEDIA
+                    : mediaUrl && text === null
+                    ? MessageType.MEDIA
+                    : MessageType.TEXT,
+                sentAt: data.sentAt,
+              },
+            ]);
             break;
           case "joined-group":
             console.log(

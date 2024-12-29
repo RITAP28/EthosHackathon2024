@@ -46,8 +46,8 @@ export interface CurrentChat {
 export interface latestTextWithUser {
     receivedBy: string;
     sentBy: string;
-    mediaUrl: string | null;
-    latestText?: string;
+    mediaUrl?: string | null;
+    latestText?: string | null;
     sentAt: Date;
   };
 

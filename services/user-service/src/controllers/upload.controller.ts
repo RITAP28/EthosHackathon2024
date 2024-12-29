@@ -36,6 +36,7 @@ export async function uploadMediaFiles(req: Request, res: Response) {
     const command = new PutObjectCommand(params);
     await s3.send(command);
 
+    console.log("making the signed url for the recently uploaded image");
     const signedUrl = await getMediaFileSignedUrl(fileName);
 
     return res.status(200).json({
@@ -67,6 +68,7 @@ async function getMediaFileSignedUrl(filename: string) {
             }
         );
 
+        console.log("signed url is: ", signedUrl);
         return signedUrl;
     } catch (error) {
         console.error("Error while getting media file presigned url: ", error);

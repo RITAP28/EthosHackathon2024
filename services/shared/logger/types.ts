@@ -1,6 +1,5 @@
 export interface LogMetadata {
     service?: string;
-    userId?: string | number;
     action?: string;
     [key: string]: any;
   }

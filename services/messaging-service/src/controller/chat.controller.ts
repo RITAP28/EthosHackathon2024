@@ -1,5 +1,5 @@
 import { prisma } from "../../../../db/db";
-import { wss } from "../messaging.index";
+import { logger, wss } from "../messaging.index";
 import { ExtendedWebsocket, Receiver, Sender } from "../utils/utils";
 
 export async function getUsersFromDatabase(email: string) {
@@ -45,7 +45,7 @@ export async function findUserSocket(email: string) {
 export async function addChatsToDatabase(
   senderEmail: string,
   receiverEmail: string,
-  textMetadata: string,
+  textMetadata: string | null,
   mediaUrl: string | null
 ) {
   try {
@@ -53,18 +53,39 @@ export async function addChatsToDatabase(
       data: {
         senderEmail: senderEmail,
         receiverEmail: receiverEmail,
-        mediaUrl: mediaUrl,
-        textMetadata: textMetadata,
+        mediaUrl: mediaUrl, // string | null
+        textMetadata: textMetadata, // string | null
         sentAt: new Date(Date.now()),
-        receivedAt: null,
-        isDelivered: false,
-        isRead: false,
+        receivedAt: null, // null because the chat is just added, not read by the receiver yet
+        isDelivered: false, // just created, not delivered
+        isRead: false, // not delivered, so not read
       },
     });
     console.log("new chat added to database successfully");
+    if (chatAdditionResponse.chatId === undefined) {
+      console.error("Error while adding chat to database: chatId is undefined");
+      logger.error("Error while adding chat to database: chatId is undefined", {
+        service: "messaging-service",
+        action: "send-message",
+        errorMessage: "chatId is undefined",
+        function: "addChatsToDatabase()",
+        file: "chat.controller.ts",
+      });
+      return;
+    }
     return chatAdditionResponse.chatId;
   } catch (error) {
     console.error("Error while adding chats to database: ", error);
+    logger.error(
+      "Error while adding chats to database: Internal Server Error",
+      {
+        service: "messaging-service",
+        action: "send-message",
+        errorMessage: "Internal Server Error",
+        function: "addChatsToDatabase()",
+        file: "chat.controller.ts",
+      }
+    );
   }
 }
 
@@ -95,7 +116,7 @@ export async function createChatPartnerEntry(
   receiver: Receiver,
   receiverEmail: string,
   mediaUrl: string | null,
-  message: string
+  message: string | null
 ) {
   console.log("sender: ", sender);
   console.log("receiver: ", receiver);
@@ -121,7 +142,14 @@ export async function createChatPartnerEntry(
             },
           },
           data: {
+            mediaUrl: mediaUrl,
             latestChat: message,
+            latestChatType:
+              mediaUrl && message
+                ? "TEXT_MEDIA"
+                : message && mediaUrl === null
+                ? "TEXT"
+                : "MEDIA",
             updatedAt: new Date(Date.now()),
           },
         });
@@ -141,6 +169,12 @@ export async function createChatPartnerEntry(
           chatPartnerEmail: receiver.email,
           mediaUrl: mediaUrl,
           latestChat: message,
+          latestChatType:
+            message && mediaUrl
+              ? "TEXT_MEDIA"
+              : mediaUrl && message === null
+              ? "MEDIA"
+              : "TEXT",
           updatedAt: new Date(Date.now()),
         },
       });
@@ -184,6 +218,12 @@ export async function updateChatPartnerEntry(
           data: {
             mediaUrl: mediaUrl,
             latestChat: message,
+            latestChatType:
+              message && mediaUrl
+                ? "TEXT_MEDIA"
+                : message && mediaUrl === null
+                ? "TEXT"
+                : "MEDIA",
             updatedAt: new Date(Date.now()),
           },
         });
@@ -201,6 +241,12 @@ export async function updateChatPartnerEntry(
         data: {
           mediaUrl: mediaUrl,
           latestChat: message,
+          latestChatType:
+            message && mediaUrl
+              ? "TEXT_MEDIA"
+              : message && mediaUrl === null
+              ? "TEXT"
+              : "MEDIA",
           updatedAt: new Date(Date.now()),
         },
       });
