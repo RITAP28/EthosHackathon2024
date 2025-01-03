@@ -63,7 +63,7 @@ export async function uploadMediaFiles(req: Request, res: Response) {
     await s3.send(command);
 
     console.log("making the signed url for the recently uploaded image");
-    const signedUrl = await getMediaFileSignedUrl(fileName);
+    const signedUrl = await composeMediaFileSignedUrl(fileName);
 
     if (signedUrl === null) {
       console.error("Signed URL could not be generated");
@@ -101,7 +101,7 @@ export async function uploadMediaFiles(req: Request, res: Response) {
   }
 }
 
-async function getMediaFileSignedUrl(filename: string) {
+async function composeMediaFileSignedUrl(filename: string) {
   try {
     const getCommand = new GetObjectCommand({
       Bucket: bucketName,
@@ -130,5 +130,59 @@ async function getMediaFileSignedUrl(filename: string) {
       file: "upload.controller.ts",
     });
     return null;
+  }
+}
+
+export async function checkMediaUrlExpiresAt(req: Request, res: Response) {
+  const mediaUrl = req.query.mediaUrl as string;
+  try {
+    const mediaUrlInformation = await prisma.media.findFirst({
+      where: {
+        mediaUrl: mediaUrl,
+      },
+    });
+    if (!mediaUrlInformation) {
+      console.log("The media url is not found in the database");
+      return;
+    };
+    if (
+      mediaUrlInformation.expiresAt < new Date()
+    ) {
+      console.log("the media url has expired");
+      const filename = mediaUrl.split('/').pop();
+      if (!filename) {
+        throw new Error("Failed to extract the name of the file stored in media url");
+      };
+      console.log("filename: ", filename);
+      const getCommand = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: filename,
+      });
+      const signedUrl = await getSignedUrl(s3, getCommand, {
+        expiresIn: expTime,
+      });
+      const newExpiresAt = new Date(Date.now() + + 24 * 60 * 60 * 1000);
+      await prisma.media.update({
+        where: {
+          mediaId: mediaUrlInformation.mediaId
+        },
+        data: {
+          expiresAt: newExpiresAt,
+          updatedAt: new Date(Date.now())
+        }
+      });
+      return signedUrl;
+    } else {
+      return;
+    }
+  } catch (error) {
+    console.error("Error while checking media url: ", error);
+    logger.error("Error while checking media url", {
+      action: "user-service",
+      service: "checking-media-url-for-uploaded-image",
+      errorMessage: error,
+      function: "checkMediaUrlExpiresAt()",
+      file: "upload.controller.ts",
+    });
   }
 }

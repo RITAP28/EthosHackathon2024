@@ -55,7 +55,7 @@ const ImageModal = ({
     try {
       e.preventDefault();
       const mediaResponse = await axios.post(
-        `${baseUrl}/api/v1/upload/media`,
+        `${baseUrl}/api/v1/media/upload`,
         formData,
         {
           headers: {

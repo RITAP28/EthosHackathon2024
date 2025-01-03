@@ -100,7 +100,22 @@ const useWebSocketConnection = (token: string) => {
               isClosable: true,
             });
             break;
+          case "send-message":
+            console.log("text metadata: ", data.textMetadata);
+            console.log("media url: ", data.mediaUrl);
+            setLatestText({
+              receivedBy: data.to,
+              sentBy: data.from,
+              mediaUrl: data.mediaUrl,
+              latestText: data.textMetadata,
+              sentAt: data.sentAt,
+            });
+            // console.log("text metadata÷")
+            console.log("latest text: ", latestText);
+            break;
           case "receive-message":
+            console.log("text metadata: ", data.textMetadata);
+            console.log("media url: ", data.mediaUrl);
             setLatestText({
               receivedBy: data.to,
               sentBy: data.from,
@@ -131,34 +146,6 @@ const useWebSocketConnection = (token: string) => {
               `${data.from} has sent a message`,
               `${data.from}: ${data.textMetadata}`
             );
-            break;
-          case "send-message":
-            setLatestText({
-              receivedBy: data.to,
-              sentBy: data.from,
-              mediaUrl: data.mediaUrl,
-              latestText: data.textMetadata,
-              sentAt: data.sentAt,
-            });
-            console.log(
-              `message sent successfully to ${data.to} from ${data.from}`
-            );
-            setChatHistory((prevChats) => [
-              ...prevChats,
-              {
-                senderEmail: data.from,
-                receiverEmail: data.to,
-                mediaUrl: mediaUrl,
-                textMetadata: text,
-                messageType:
-                  mediaUrl && text
-                    ? MessageType.TEXT_MEDIA
-                    : mediaUrl && text === null
-                    ? MessageType.MEDIA
-                    : MessageType.TEXT,
-                sentAt: data.sentAt,
-              },
-            ]);
             break;
           case "joined-group":
             console.log(
@@ -241,12 +228,15 @@ const useWebSocketConnection = (token: string) => {
     setLatestText,
   ]);
 
+  useEffect(() => {
+    console.log("latest text updated: ", latestText);
+  }, [latestText]);
+
   return {
     loadingGroups,
     groups,
     handleGetGroups,
     latestText,
-    setLatestText,
     chatHistory,
     groupChatHistory,
     setChatHistory,

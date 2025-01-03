@@ -26,7 +26,6 @@ import showSuccessToast from "./ui/toasts/showSuccessToast";
 const TextingSection = ({
   token,
   latestText,
-  setLatestText,
   ws,
   chatHistory,
   setChatHistory,
@@ -40,7 +39,6 @@ const TextingSection = ({
 }: {
   token: string;
   latestText: latestTextWithUser;
-  setLatestText: React.Dispatch<React.SetStateAction<latestTextWithUser>>;
   ws: WebSocket | null;
   chatHistory: ChatHistory[];
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
@@ -348,6 +346,7 @@ const TextingSection = ({
     mediaUrl: string | null,
     textMetadata: string
   ) => {
+    console.log("clicked!");
     try {
       if (ws && ws.OPEN) {
         ws.send(
@@ -358,13 +357,6 @@ const TextingSection = ({
             mediaUrl: mediaUrl,
           })
         );
-        setLatestText({
-          receivedBy: receiverEmail,
-          sentBy: currentUser?.email as string,
-          mediaUrl: mediaUrl,
-          latestText: textMetadata,
-          sentAt: new Date(Date.now()),
-        });
         if (mediaUrl === null) {
           setChatHistory((prevChats) => [
             ...prevChats,
@@ -453,39 +445,6 @@ const TextingSection = ({
       showErrorToast(toast, "Error while sending message", apiError.message);
     }
   };
-
-  // export async function handleSendButtonWithImage({
-  //   ws,
-  //   sender,
-  //   receiver,
-  //   imageUrl,
-  //   textMetadata,
-  // } : {
-  //   ws: WebSocket | null,
-  //   sender: Sender,
-  //   receiver: Receiver,
-  //   imageUrl: string,
-  //   textMetadata: string,
-  // }) {
-  //   const chatPartnerEmail = receiver.email;
-  //   const SocketChatPartner = ws?.chatPartner;
-  //   console.log("sending chat plus image to: ", chatPartnerEmail);
-  //   try {
-  //     if (ws && ws.OPEN) {
-  //       ws.send(
-  //         JSON.stringify({
-  //           action: "send-message-with-image",
-  //           targetEmail: chatPartnerEmail,
-  //           mediaUrl: imageUrl,
-  //           message: textMetadata
-  //         })
-  //       );
-  
-  //     }
-  //   } catch (error) {
-  //     console.error("Error while sending image with text: ", error);
-  //   }
-  // }
 
   const handleDateFormat = (sentAt: Date): string => {
     const messageDate = new Date(sentAt);
@@ -594,153 +553,6 @@ const TextingSection = ({
     }
   };
 
-  // useEffect(() => {
-  //   if (ws && ws.OPEN) {
-  //     // fetching users from the database from the database via websockets
-  //     ws.onopen = () => {
-  //       console.log("websocket connection opened successfully.");
-  //       ws.send(
-  //         JSON.stringify({
-  //           action: "fetch-chat-partners",
-  //         })
-  //       );
-  //     };
-
-  //     ws.onmessage = (message) => {
-  //       const data = JSON.parse(message.data);
-  //       console.log(`Received message from the server: `, data);
-
-  //       if (data.action === `receive-message`) {
-  //         console.log(`message from ${data.from}: `, data.textMetadata);
-  //         setLatestText({
-  //           receivedBy: data.to,
-  //           sentBy: data.from,
-  //           latestText: data.textMetadata,
-  //           sentAt: data.sentAt,
-  //         });
-  //         setChatHistory((prevChats) => [
-  //           ...prevChats,
-  //           {
-  //             textMetadata: data.textMetadata,
-  //             senderEmail: data.from,
-  //             receiverEmail: data.to,
-  //             sentAt: data.sentAt,
-  //           },
-  //         ]);
-  //         toast({
-  //           title: `Received message from ${data.from} successfully`,
-  //           status: "success",
-  //           duration: 4000,
-  //           isClosable: true,
-  //           position: "top-right",
-  //         });
-  //       } else if (data.action === "send-message") {
-  //         setLatestText({
-  //           receivedBy: data.to,
-  //           sentBy: data.from,
-  //           latestText: data.textMetadata,
-  //           sentAt: data.sentAt,
-  //         });
-  //         setChatHistory((prevChats) => [
-  //           ...prevChats,
-  //           {
-  //             textMetadata: data.textMetadata,
-  //             senderEmail: data.from,
-  //             receiverEmail: data.to,
-  //             sentAt: data.sentAt,
-  //           },
-  //         ]);
-  //         toast({
-  //           title: `Message sent to ${data.to} successfully`,
-  //           status: "success",
-  //           duration: 4000,
-  //           isClosable: true,
-  //           position: "top-right",
-  //         });
-  //       } else if (
-  //         data.message === `Message sent to ${currentChat} successfully`
-  //       ) {
-  //         toast({
-  //           title: `Message sent successfully to ${currentChat}`,
-  //           status: "success",
-  //           duration: 4000,
-  //           isClosable: true,
-  //           position: "top-right",
-  //         });
-  //       } else if (
-  //         data.message ===
-  //         `Chat Partner not matching with the one in the socket`
-  //       ) {
-  //         toast({
-  //           title: `Chat Partner Email mismatch happened`,
-  //           status: "error",
-  //           duration: 4000,
-  //           isClosable: true,
-  //           position: "top-right",
-  //         });
-  //         console.log("Chat Partner Email mismatch happened");
-  //         return;
-  //       } else if (
-  //         data.message ===
-  //         `All the chats have been fetched for ${currentUser?.email} successfully`
-  //       ) {
-  //         setChatPartnerViaSocket(data.chatPartners);
-  //         toast({
-  //           title: `All the chats have been fetched for ${currentUser?.email} successfully`,
-  //           status: "success",
-  //           duration: 4000,
-  //           isClosable: true,
-  //           position: "top-right",
-  //         });
-  //       } else if (data.action === "joined-group") {
-  //         toast({
-  //           title: data.title,
-  //           status: "success",
-  //           description: data.message,
-  //           isClosable: true,
-  //           position: "top-right",
-  //           duration: 400,
-  //         });
-  //       } else if (data.action === "receive-group-message") {
-  //         console.log("Received message from group: ", data.message);
-  //         setGroupChatHistory((prevChats) => [
-  //           ...prevChats,
-  //           {
-  //             groupId: data.targetGroup.id,
-  //             groupName: data.targetGroup.name,
-  //             senderId: Number(currentUser?.id),
-  //             senderName: String(currentUser?.name),
-  //             senderEmail: String(currentUser?.email),
-  //             textMetadata: data.message,
-  //             sentAt: data.sentAt,
-  //           },
-  //         ]);
-  //         toast({
-  //           title: `Received a message from ${data.targetGroup.name}`,
-  //           status: "success",
-  //           duration: 4000,
-  //           isClosable: true,
-  //           position: "top-right",
-  //         });
-  //       }
-  //     };
-  //   }
-
-  //   return () => {
-  //     if (ws) {
-  //       ws.onmessage = null;
-  //     }
-  //   };
-  // }, [
-  //   ws,
-  //   toast,
-  //   currentChat,
-  //   currentUser,
-  //   setChatHistory,
-  //   setLatestText,
-  //   setGroupChatHistory,
-  // ]);
-
   const handleCreateGroup = async () => {
     setGroupCreationLoading(true);
     try {
@@ -815,6 +627,7 @@ const TextingSection = ({
     setGroupCreationLoading(false);
   };
 
+  // function to fetch chats between two specific users
   const handleRetrieveChatsBetweenClients = useCallback(async () => {
     setLoadingChatHistory(true);
     try {

@@ -40,7 +40,6 @@ const ClientDashboard = () => {
     groups,
     handleGetGroups,
     latestText,
-    setLatestText,
     chatHistory,
     groupChatHistory,
     setChatHistory,
@@ -134,7 +133,6 @@ const ClientDashboard = () => {
             <TextingSection
               token={token}
               latestText={latestText}
-              setLatestText={setLatestText}
               ws={ws}
               chatHistory={chatHistory}
               setChatHistory={setChatHistory}
